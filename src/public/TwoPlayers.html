@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Two-Player UNO</title>
+    <link rel="stylesheet" href="css/global.css" />
+  </head>
+  <body>
+    <div class="container">
+      <h1 class="game-title">Two-Player UNO</h1>
+
+      <div class="player-selector">
+        <button id="player1-btn" onclick="selectPlayer('player1')">
+          Play as Player 1
+        </button>
+        <button id="player2-btn" onclick="selectPlayer('player2')">
+          Play as Player 2
+        </button>
+      </div>
+
+      <div class="game-controls">
+        <button id="start-game">Start New Game</button>
+        <button id="draw-card" disabled>Draw Card</button>
+      </div>
+
+      <div class="game-status" id="game-status">Select a player to begin</div>
+
+      <div class="game-area">
+        <div class="hand-label">Opponent's Hand</div>
+        <div class="opponent-hand" id="opponent-hand"></div>
+
+        <div class="game-info">
+          <div class="draw-pile" id="draw-pile">DRAW</div>
+          <div class="top-card" id="top-card"></div>
+        </div>
+
+        <div class="turn-indicator" id="turn-indicator"></div>
+
+        <div class="hand-label">Your Hand</div>
+        <div class="player-hand" id="player-hand"></div>
+      </div>
+    </div>
+    <script src="scripts/TwoPlayers.js"></script>
+  </body>
+</html>

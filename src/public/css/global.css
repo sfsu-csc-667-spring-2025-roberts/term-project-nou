@@ -1,0 +1,139 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #f0f0f0;
+  margin: 0;
+  padding: 20px;
+}
+.container {
+  max-width: 800px;
+  margin: 0 auto;
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+.game-title {
+  text-align: center;
+  color: #333;
+}
+.game-controls {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+button {
+  padding: 10px 15px;
+  margin: 0 5px;
+  border: none;
+  border-radius: 4px;
+  background-color: #007bff;
+  color: white;
+  cursor: pointer;
+  font-size: 16px;
+}
+button:hover {
+  background-color: #0056b3;
+}
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+.game-status {
+  text-align: center;
+  margin: 15px 0;
+  font-size: 18px;
+  font-weight: bold;
+}
+.card {
+  display: inline-block;
+  width: 80px;
+  height: 120px;
+  margin: 5px;
+  border-radius: 8px;
+  border: 2px solid #333;
+  text-align: center;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+  position: relative;
+  transition: transform 0.2s;
+}
+.card:hover {
+  transform: translateY(-10px);
+}
+.red {
+  background-color: #ff5555;
+  color: white;
+}
+.blue {
+  background-color: #5555ff;
+  color: white;
+}
+.green {
+  background-color: #55aa55;
+  color: white;
+}
+.yellow {
+  background-color: #ffaa00;
+  color: black;
+}
+.card-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+.card-back {
+  background-color: #333;
+  color: white;
+}
+.game-area {
+  margin-top: 20px;
+}
+.top-card {
+  margin: 20px auto;
+  transform: scale(1.2);
+}
+.player-hand,
+.opponent-hand {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin: 20px 0;
+  min-height: 130px;
+}
+.hand-label {
+  margin: 10px 0;
+  text-align: center;
+  font-weight: bold;
+}
+.player-selector {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+}
+.draw-pile {
+  width: 80px;
+  height: 120px;
+  margin: 5px auto;
+  border-radius: 8px;
+  border: 2px solid #333;
+  background-color: #333;
+  color: white;
+  text-align: center;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.turn-indicator {
+  text-align: center;
+  font-size: 18px;
+  margin: 10px 0;
+  color: #007bff;
+}
+.game-info {
+  display: flex;
+  justify-content: space-around;
+  margin: 20px 0;
+}
