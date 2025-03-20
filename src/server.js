@@ -5,7 +5,7 @@ const app = express();
 const port = 3000;
 
 // Serve static files
-app.use(express.static("public"));
+app.use(express.static("client"));
 app.use(express.json());
 
 // Game state
@@ -263,11 +263,11 @@ function getPlayerState(playerId) {
 
 // Routes
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "client", "index.html"));
 });
 
 app.get("/twoplayers", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "TwoPlayers.html"));
+  res.sendFile(path.join(__dirname, "client", "TwoPlayers.html"));
 });
 
 app.post("/api/start-game", (req, res) => {
