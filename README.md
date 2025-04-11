@@ -1,5 +1,6 @@
 [![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=18486214)
 
-Group number: 5
-Group name: NoU
-Team members: Juan Ramirez, Zoe Long, Andy Samayoa, Gautier Bonhur
+Group number: 5 <br />
+Group Letter: M <br />
+Group name: NoU <br />
+Team members: Juan Ramirez, Zoe Long, Andy Samayoa, Gautier Bonhur <br />
