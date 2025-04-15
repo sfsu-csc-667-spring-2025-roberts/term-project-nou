@@ -1,0 +1,70 @@
+{
+  "name": "team-nou",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "NODE_ENV=production ts-node src/server/index.ts",
+    "start:dev": "concurrently --names server,frontend -c blue,green \"npm run server:dev\" \"npm run frontend:dev\"",
+    "server:dev": "nodemon --exec ts-node src/server/index.ts --ext ejs,ts --ignore public",
+    "frontend": "webpack --config webpack.config.ts",
+    "frontend:dev": "webpack --config webpack.config.ts --mode development --watch",
+    "prepare": "husky",
+    "db:create": "node-pg-migrate create -j ts --",
+    "db:migrate": "ts-node node_modules/node-pg-migrate/bin/node-pg-migrate.js up -j ts",
+    "db:rollback": "ts-node node_modules/node-pg-migrate/bin/node-pg-migrate.js down -j ts"
+  },
+  "lint-staged": {
+    "**/*": "prettier --write --ignore-unknown"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/connect-livereload": "^0.6.3",
+    "@types/connect-pg-simple": "^7.0.3",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/express": "^5.0.0",
+    "@types/express-session": "^1.18.1",
+    "@types/livereload": "^0.9.5",
+    "@types/morgan": "^1.9.9",
+    "@types/node": "^22.13.10",
+    "@types/webpack": "^5.28.5",
+    "concurrently": "^9.1.2",
+    "connect-livereload": "^0.6.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.0",
+    "livereload": "^0.9.3",
+    "nodemon": "^3.1.9",
+    "prettier": "^3.5.3",
+    "ts-loader": "^9.5.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2",
+    "webpack": "^5.99.5",
+    "webpack-cli": "^6.0.1"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.1",
+    "connect-pg-simple": "^10.0.0",
+    "cookie-parser": "^1.4.7",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^5.0.1",
+    "express-session": "^1.18.1",
+    "http-errors": "^2.0.0",
+    "morgan": "^1.10.0",
+    "node-pg-migrate": "^7.9.1",
+    "pg": "^8.14.1",
+    "pg-promise": "^11.13.0",
+    "socket.io": "^4.8.1"
+  },
+  "files.associations": {
+    "*.ejs": "html"
+  },
+  "emmet.includeLanguages": {
+    "ejs": "html"
+  },
+  "html.format.templating": true
+}
