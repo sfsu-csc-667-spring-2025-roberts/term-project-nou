@@ -23,6 +23,7 @@ export async function up(pgm: MigrationBuilder): Promise<void> {
     winRate: {
       type: "float",
       notNull: true,
+      default: 0,
     },
     createdAt: {
       type: "timestamp",
