@@ -1,10 +1,37 @@
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <title><%= title %></title>
-        <script src="/js/main.js" defer></script>
-    </head>
-    <body>
-        <p>Welcome</p>
-    </body>
+  <head>
+    <title><%= title %></title>
+    <script src="/js/main.js" defer></script>
+    <link rel="stylesheet" href="/css/main.css" />
+  </head>
+  <body>
+    <section class="landing-page-wrapper section active" id="section1">
+      <div class="logo"><img src="images/UNO_Logo.svg" alt="" /></div>
+      <div class="message">Please Click Anywhere to Start</div>
+    </section>
+  </body>
+  <script>
+    // need to adjust later
+    document.body.addEventListener("click", async () => {
+      try {
+        const response = await fetch("/auth/check-session", {
+          method: "GET",
+          credentials: "include", // Include cookies for session
+        });
+
+        if (response.ok) {
+          // User is logged in, redirect to the main page
+          window.location.href = "/lobby"; // Replace with your main page route
+        } else {
+          // User is not logged in, redirect to the login page
+          console.log(response);
+          window.location.href = "/auth/login"; // Replace with your login page route
+        }
+      } catch (error) {
+        console.error("Error checking session:", error);
+        alert("An error occurred. Please try again.");
+      }
+    });
+  </script>
 </html>

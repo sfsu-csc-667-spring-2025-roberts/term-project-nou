@@ -1,6 +1,67 @@
-body{background-color: #369;}
+body {
+  background-color: #369;
+}
 
-#container{
-    width: 1024px;
-    margin: auto;
+#container {
+  width: 1024px;
+  margin: auto;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  background-color: #000;
+  color: white;
+  font-family: Arial, sans-serif;
+  cursor: pointer;
+}
+
+.landing-page-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logo {
+  font-size: 2rem;
+  opacity: 0;
+  animation: fadeIn 2s forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0);
+  }
+  to {
+    opacity: 1;
+    transform: scale(0.7);
+  }
+}
+
+.message {
+  font-size: 2.5rem;
+  opacity: 0;
+  animation: fadeIn 1s forwards 1s;
+  text-shadow:
+    0 0 10px rgba(255, 255, 255, 0.8),
+    0 0 20px rgba(255, 255, 255, 0.6),
+    0 0 30px rgba(255, 255, 255, 0.4);
+}
+
+.login-wrapper {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  max-width: 500px;
+  padding: 10px;
+
+  background-color: #353535;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }

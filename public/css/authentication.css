@@ -1,0 +1,84 @@
+body {
+  font-family: Arial, sans-serif;
+  background-color: #000000;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+#container {
+  width: 100%;
+  max-width: 400px;
+  margin: auto;
+  padding: 20px;
+  background: rgba(6, 6, 6, 0.8); /* Transparent background */
+  border-radius: 24px;
+  box-shadow:
+    0 10px 15px rgba(0, 0, 0, 0.3),
+    0 0 45px var(--glow-color, rgba(255, 0, 0, 0.1)); /* Dynamic glow color */
+  /* border: 1px solid var(--glow-color, rgba(255, 0, 0, 0.4)); Dynamic border color */
+  color: white; /* Ensure text is visible on dark background */
+  transition:
+    box-shadow 0.3s ease-in-out,
+    transform 0.3s ease-in-out;
+}
+
+#container:hover {
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.7),
+    0 0 40px var(--glow-color, rgba(255, 0, 0, 0.8)); /* Stronger glow on hover */
+  transform: scale(1.02); /* Slight zoom effect */
+}
+form {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin: auto;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+button {
+  width: 100%;
+  padding: 10px;
+  margin: 20px auto;
+  background-color: var(--glow-color, rgba(255, 0, 0, 0.5));
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: var(--glow-color, rgba(255, 0, 0, 0.8));
+}
+h1 {
+  font-family: "Poetsen One", sans-serif;
+  text-align: center;
+  font-size: 36px;
+  margin-bottom: 20px;
+  color: var(--glow-color, rgba(255, 0, 0, 0.5));
+}
+a {
+  text-decoration: underline;
+  color: white;
+}
+p {
+  text-align: center;
+  font-size: 14px;
+  color: #ccc;
+  margin-top: -10px;
+}
