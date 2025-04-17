@@ -32,6 +32,7 @@
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.13.10",
     "@types/webpack": "^5.28.5",
+    "@types/webpack-dev-server": "^4.7.1",
     "concurrently": "^9.1.2",
     "connect-livereload": "^0.6.1",
     "husky": "^9.1.7",
@@ -43,12 +44,14 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2",
     "webpack": "^5.99.5",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.1"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
     "connect-pg-simple": "^10.0.0",
     "cookie-parser": "^1.4.7",
+    "css-loader": "^7.1.2",
     "dotenv": "^16.4.7",
     "ejs": "^3.1.10",
     "express": "^5.0.1",
