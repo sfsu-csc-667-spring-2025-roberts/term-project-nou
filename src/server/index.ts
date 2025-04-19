@@ -1,4 +1,5 @@
 import * as path from "path";
+import { createServer } from 'http';
 
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -9,10 +10,14 @@ import livereload from "livereload";
 import connectLivereload from "connect-livereload";
 
 import {setupSessions} from "./config/session";
+import { setupSocket } from "./socket";
 
 import dotenv from "dotenv";
 dotenv.config();
+
 const app = express();
+const server = createServer(app);
+const io = setupSocket(server);
 
 if(process.env.NODE_ENV !== "production"){
     const reloadServer = livereload.createServer();
@@ -45,10 +50,10 @@ app.use("/test", routes.test);
 app.use("/auth", routes.auth);
 app.use("/lobby", sessionMiddleware, routes.lobby);
 
-
 app.use((_request, _response, next) => {
     next(httpErrors(404));
 });
-app.listen(PORT, () => {
+
+server.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });

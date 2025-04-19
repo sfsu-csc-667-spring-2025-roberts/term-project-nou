@@ -1,4 +1,7 @@
-export {default as root} from "./root";
-export {default as test} from "./test";
-export {default as auth} from "./auth";
-export {default as lobby} from "./lobby";
+import chat from './chat';
+import auth from './auth';
+import lobby from './lobby';
+import test from './test';
+import root from './root';
+
+export { chat, auth, lobby, test, root };
