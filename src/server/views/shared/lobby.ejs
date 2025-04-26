@@ -2,88 +2,20 @@
 <html lang="en">
   <head>
     <title>UNO</title>
-    <style>
-        .chat-container {
-            display: flex;
-            flex-direction: column;
-            height: 400px;
-            width: 300px;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            overflow: hidden;
-            background-color: #fff;
-            margin: 20px 0;
-        }
-
-        .messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-
-        .message {
-            display: flex;
-            flex-direction: column;
-            padding: 8px;
-            background-color: #f0f0f0;
-            border-radius: 4px;
-            max-width: 80%;
-        }
-
-        .message .userId {
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 4px;
-        }
-
-        .message .content {
-            color: #000;
-        }
-
-        .message .timestamp {
-            font-size: 0.8em;
-            color: #666;
-            align-self: flex-end;
-            margin-top: 4px;
-        }
-
-        .message-form {
-            display: flex;
-            padding: 10px;
-            border-top: 1px solid #ccc;
-            background-color: #f8f8f8;
-        }
-
-        .message-form input {
-            flex: 1;
-            padding: 8px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            margin-right: 8px;
-        }
-
-        .message-form button {
-            padding: 8px 16px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .message-form button:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    <link rel="stylesheet" href="/css/lobby.css">
+    <link rel="stylesheet" href="/css/global.css">
   </head>
   <body>
+    <%- include('header') %> 
     <h1>Hello user <%= userId %></h1>
     <h2>Welcome to the UNO lobby</h2>
     
-    <div class="chat-container">
+    <div id="chatWindow" class="chat-container">
+        <div id="chatHeader">
+            <div id="moveableHeader">Public Chat 🌎</div>
+            <button id="toggleChat" style="margin-left: 10px; cursor: pointer;">▼</button>
+        </div>
+
         <div class="messages" id="messages">
             <% if (messages && messages.length > 0) { %>
                 <% messages.forEach(function(message) { %>
@@ -103,9 +35,22 @@
         </form>
     </div>
 
+    <section class="game-options">
+        <div class="create-game-button">
+           <img class="image" src="images/house.png" alt="create"> 
+           <h2>Create Room</h2>
+        </div>
+        <div class="join-game">
+           <img class="image" src="images/meeting.png" alt="join">
+           <h2>Join Room</h2>
+        </div>
+    </section>
+
     <a href="/auth/logout" style="color: red; text-decoration: none; font-size: 1.2rem">Logout</a>
 
     <script src="/socket.io/socket.io.js"></script>
+    <script src="js/lobby.js"></script>
+    <script src="/js/header.js"></script>
     <script>
         const socket = io();
         const messagesDiv = document.getElementById('messages');

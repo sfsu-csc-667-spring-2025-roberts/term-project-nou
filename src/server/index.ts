@@ -1,5 +1,5 @@
 import * as path from "path";
-import { createServer } from 'http';
+import { createServer } from "http";
 
 import cookieParser from "cookie-parser";
 import express from "express";
@@ -9,7 +9,7 @@ import morgan from "morgan";
 import livereload from "livereload";
 import connectLivereload from "connect-livereload";
 
-import {setupSessions} from "./config/session";
+import { setupSessions } from "./config/session";
 import { setupSocket } from "./socket";
 
 import dotenv from "dotenv";
@@ -19,15 +19,15 @@ const app = express();
 const server = createServer(app);
 const io = setupSocket(server);
 
-if(process.env.NODE_ENV !== "production"){
-    const reloadServer = livereload.createServer();
-    reloadServer.watch(path.join(process.cwd(), "public", "js"));
-    reloadServer.server.once("connection", () => {
-        setTimeout(() =>{
-            reloadServer.refresh("/");
-        }, 100);
-    });
-    app.use(connectLivereload());
+if (process.env.NODE_ENV !== "production") {
+  const reloadServer = livereload.createServer();
+  reloadServer.watch(path.join(process.cwd(), "public", "js"));
+  reloadServer.server.once("connection", () => {
+    setTimeout(() => {
+      reloadServer.refresh("/");
+    }, 100);
+  });
+  app.use(connectLivereload());
 }
 
 setupSessions(app);
@@ -51,9 +51,9 @@ app.use("/auth", routes.auth);
 app.use("/lobby", sessionMiddleware, routes.lobby);
 
 app.use((_request, _response, next) => {
-    next(httpErrors(404));
+  next();
 });
 
 server.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

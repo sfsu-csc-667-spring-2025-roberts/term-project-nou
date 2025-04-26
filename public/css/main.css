@@ -1,5 +1,6 @@
 body {
-  background-color: #369;
+  background-color: var(--background-color);
+  color: var(--text-color);
 }
 
 #container {
