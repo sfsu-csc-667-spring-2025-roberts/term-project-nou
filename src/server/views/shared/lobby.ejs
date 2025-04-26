@@ -4,6 +4,7 @@
     <title>UNO</title>
     <link rel="stylesheet" href="/css/lobby.css">
     <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/create-game-form.css">
   </head>
   <body>
     <%- include('header') %> 
@@ -36,17 +37,19 @@
     </div>
 
     <section class="game-options">
-        <div class="create-game-button">
+        <button id = "create-game-button" class="create-game">
            <img class="image" src="images/house.png" alt="create"> 
            <h2>Create Room</h2>
-        </div>
-        <div class="join-game">
+        </button>
+        <button class="join-game">
            <img class="image" src="images/meeting.png" alt="join">
            <h2>Join Room</h2>
-        </div>
+        </button>
     </section>
 
     <a href="/auth/logout" style="color: red; text-decoration: none; font-size: 1.2rem">Logout</a>
+    <%- include("../games/create-form") %>
+
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/lobby.js"></script>

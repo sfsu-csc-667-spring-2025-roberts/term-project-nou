@@ -49,6 +49,7 @@ app.use("/", routes.root);
 app.use("/test", routes.test);
 app.use("/auth", routes.auth);
 app.use("/lobby", sessionMiddleware, routes.lobby);
+app.use("/games", sessionMiddleware, routes.games);
 
 app.use((_request, _response, next) => {
   next();

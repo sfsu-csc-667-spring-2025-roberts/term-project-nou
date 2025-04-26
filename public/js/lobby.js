@@ -7,6 +7,7 @@ const createGameContainer = document.querySelector("#create-game-container");
 const closeButton = document.querySelector("#close-create-game-form");
 
 createGameButton?.addEventListener("click", (event) => {
+  console.log("Create game button clicked");
   event.preventDefault();
 
   createGameContainer?.classList.add("visible");

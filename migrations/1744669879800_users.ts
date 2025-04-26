@@ -1,5 +1,4 @@
 import { ColumnDefinitions, MigrationBuilder } from "node-pg-migrate";
-import { identity } from "node-pg-migrate/dist/utils";
 
 export async function up(pgm: MigrationBuilder): Promise<void> {
   pgm.createTable("users", {

@@ -13,9 +13,9 @@ const sessionMiddleware = (
   next: NextFunction
 ) => {
   //@ts-ignore
-  console.log("Session ID: ", request.session.userID);
+  console.log("Session ID: ", request.session.userId);
   next();
-  //   if (request.session.userID !== undefined) {
+  //   if (request.session.userId !== undefined) {
   //     //@ts-ignore
   //     response.locals.userId = request.session.userId;
   //     next();

@@ -113,7 +113,7 @@ body {
   box-sizing: border-box;
 }
 
-.create-game-button,
+.create-game,
 .join-game {
   align-self: center;
   display: flex;
@@ -135,7 +135,7 @@ body {
   margin-bottom: 10px;
 }
 
-.create-game-button h2,
+.create-game h2,
 .join-game h2 {
   margin: 0;
   text-align: center;
