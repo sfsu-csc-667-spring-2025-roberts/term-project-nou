@@ -7,7 +7,11 @@ const router = express.Router();
 
 router.post("/create", async (request: Request, response: Response) => {
   // @ts-ignore
-  const { id: userId } = request.session.userId;
+  const userId = request.session.userId;
+  if (!userId) {
+    return response.redirect("/auth/login");
+  }
+  
   const { description, minPlayers, maxPlayers, password } = request.body;
 
   try {
@@ -31,7 +35,10 @@ router.post("/join/:gameId", async (request: Request, response: Response) => {
   const { gameId } = request.params;
   const { password } = request.body;
   // @ts-ignore
-  const { id: userId } = request.session.userId;
+  const userId = request.session.userId;
+  if (!userId) {
+    return response.redirect("/auth/login");
+  }
 
   try {
     const playerCount = await Game.join(userId, parseInt(gameId), password);
@@ -48,7 +55,7 @@ router.post("/join/:gameId", async (request: Request, response: Response) => {
 router.get("/:gameId", (request: Request, response: Response) => {
   const { gameId } = request.params;
 
-  response.render("games", { gameId });
+  response.render("games/games", { gameId });
 });
 
 export default router;
