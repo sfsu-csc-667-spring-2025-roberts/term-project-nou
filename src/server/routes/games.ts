@@ -69,4 +69,29 @@ router.get("/:gameId/players", async (request: Request, response: Response) => {
   }
 });
 
+router.post<{ gameId: string }>("/:gameId/start", async (request: Request<{ gameId: string }>, response: Response) => {
+  const { gameId } = request.params;
+  // @ts-ignore
+  const userId = request.session.userId;
+  
+  if (!userId) {
+    response.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  try {
+    const gameState = await Game.startGame(parseInt(gameId));
+    response.json({ 
+      success: true, 
+      gameState,
+      message: "Game started successfully" 
+    });
+  } catch (error) {
+    console.error("Error starting game:", error);
+    response.status(400).json({ 
+      error: error instanceof Error ? error.message : "Failed to start game" 
+    });
+  }
+});
+
 export default router;
