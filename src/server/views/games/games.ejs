@@ -14,6 +14,10 @@
           <!-- Players will be displayed here -->
         </div>
       </div>
+
+      <div class="game-controls">
+        <button id="start-game-btn" class="start-game-btn">Start Game</button>
+      </div>
     </div>
 
     <script>
@@ -36,7 +40,32 @@
         }
       }
 
-      // Fetch players initially and then every 5 seconds
+      // Start game functionality
+      document.getElementById('start-game-btn').addEventListener('click', async () => {
+        try {
+          const response = await fetch(`/games/${gameId}/start`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            console.log('Game started:', data);
+            // Redirect to game play page or update UI accordingly
+            window.location.href = `/games/${gameId}/play`;
+          } else {
+            const error = await response.json();
+            alert(error.message || 'Failed to start game');
+          }
+        } catch (error) {
+          console.error('Error starting game:', error);
+          alert('Failed to start game');
+        }
+      });
+
+      // Fetch players initially and then every 10 seconds
       fetchPlayers();
       setInterval(fetchPlayers, 10000);
     </script>

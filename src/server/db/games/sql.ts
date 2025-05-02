@@ -36,3 +36,47 @@ FROM users u
 JOIN game_users gu ON u.id = gu.user_id
 WHERE gu.game_id = $(gameId)
 `;
+
+export const START_GAME_SQL = `
+WITH first_player AS (
+  SELECT user_id 
+  FROM game_users 
+  WHERE game_id = $(gameId) 
+  ORDER BY seat ASC 
+  LIMIT 1
+),
+new_room AS (
+  INSERT INTO "rooms" ("numPlayers", "rules")
+  SELECT 
+    (SELECT COUNT(*) FROM game_users WHERE game_id = $(gameId)),
+    'standard'
+  RETURNING id
+)
+INSERT INTO "gameState" ("roomID", "currentPlayer", "lastCardPlayed", "discardPile", "drawPile")
+SELECT 
+  (SELECT id FROM new_room),
+  (SELECT user_id FROM first_player),
+  (SELECT id FROM cards ORDER BY RANDOM() LIMIT 1),
+  0,
+  (SELECT COUNT(*) FROM cards)
+RETURNING "roomID"`;
+
+export const INITIALIZE_PLAYER_HANDS_SQL = `
+INSERT INTO "playerHand" ("userId", "cardId")
+SELECT 
+  gu.user_id,
+  c.id
+FROM game_users gu
+CROSS JOIN (
+  SELECT id FROM cards ORDER BY RANDOM() LIMIT 7
+) c
+WHERE gu.game_id = $(gameId)`;
+
+export const GET_GAME_STATE_SQL = `
+SELECT 
+  gs.*,
+  c.color,
+  c.value
+FROM "gameState" gs
+JOIN cards c ON gs."lastCardPlayed" = c.id
+WHERE gs."roomID" = $(gameId)`;
