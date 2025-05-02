@@ -80,3 +80,17 @@ SELECT
 FROM "gameState" gs
 JOIN cards c ON gs."lastCardPlayed" = c.id
 WHERE gs."roomID" = $(gameId)`;
+
+export const GET_PLAYERS_CARDS_SQL = `
+SELECT 
+  u.id as user_id,
+  u.username,
+  c.id as card_id,
+  c.value,
+  c.color
+FROM game_users gu
+JOIN users u ON gu.user_id = u.id
+JOIN "playerHand" ph ON ph."userId" = u.id
+JOIN cards c ON c.id = ph."cardId"
+WHERE gu.game_id = $(gameId)
+ORDER BY u.id, c.id`;

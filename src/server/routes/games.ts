@@ -100,4 +100,44 @@ router.post<{ gameId: string }>("/:gameId/start", async (request: Request<{ game
   }
 });
 
+router.get("/:gameId/play", (request: Request, response: Response) => {
+  const { gameId } = request.params;
+  response.render("games/play", { gameId });
+});
+
+router.get("/:gameId/cards", async (request: Request, response: Response) => {
+  const { gameId } = request.params;
+  // @ts-ignore
+  const userId = request.session.userId;
+  
+  if (!userId) {
+    response.status(401).json({ error: "Not authenticated" });
+    return;
+  }
+
+  try {
+    const cards = await Game.getPlayersCards(parseInt(gameId));
+    // Group cards by player
+    const playersCards = cards.reduce((acc, card) => {
+      if (!acc[card.user_id]) {
+        acc[card.user_id] = {
+          username: card.username,
+          cards: []
+        };
+      }
+      acc[card.user_id].cards.push({
+        id: card.card_id,
+        value: card.value,
+        color: card.color
+      });
+      return acc;
+    }, {});
+    
+    response.json({ players: playersCards });
+  } catch (error) {
+    console.error('Error fetching players cards:', error);
+    response.status(500).json({ error: "Failed to fetch players cards" });
+  }
+});
+
 export default router;

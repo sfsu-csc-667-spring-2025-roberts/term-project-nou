@@ -7,7 +7,8 @@ import {
   GET_PLAYERS_SQL,
   START_GAME_SQL,
   INITIALIZE_PLAYER_HANDS_SQL,
-  GET_GAME_STATE_SQL
+  GET_GAME_STATE_SQL,
+  GET_PLAYERS_CARDS_SQL
 } from "./sql";
 
 const create = async (
@@ -70,4 +71,8 @@ const startGame = async (gameId: number) => {
   });
 };
 
-export default { create, join, getPlayers, startGame };
+const getPlayersCards = async (gameId: number) => {
+  return await db.manyOrNone(GET_PLAYERS_CARDS_SQL, { gameId });
+};
+
+export default { create, join, getPlayers, startGame, getPlayersCards };
