@@ -74,26 +74,26 @@ router.post<{ gameId: string }>("/:gameId/start", async (request: Request<{ game
   // @ts-ignore
   const userId = request.session.userId;
   
-  console.log("[Server] Tentative de démarrage du jeu:", gameId);
+  console.log("[Server] Attempting to start game:", gameId);
   console.log("[Server] User ID:", userId);
   
   if (!userId) {
-    console.log("[Server] Utilisateur non authentifié");
+    console.log("[Server] User not authenticated");
     response.status(401).json({ error: "Not authenticated" });
     return;
   }
 
   try {
-    console.log("[Server] Démarrage du jeu...");
+    console.log("[Server] Starting game...");
     const gameState = await Game.startGame(parseInt(gameId));
-    console.log("[Server] Jeu démarré avec succès:", gameState);
+    console.log("[Server] Game started successfully:", gameState);
     response.json({ 
       success: true, 
       gameState,
       message: "Game started successfully" 
     });
   } catch (error) {
-    console.error("[Server] Erreur lors du démarrage du jeu:", error);
+    console.error("[Server] Error starting game:", error);
     response.status(400).json({ 
       error: error instanceof Error ? error.message : "Failed to start game"
     });
