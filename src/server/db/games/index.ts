@@ -1,5 +1,6 @@
 import db from "../connection";
-import { ADD_PLAYER, CONDITIONALLY_JOIN_SQL, CREATE_SQL } from "./sql";
+import { User } from "../users";
+import { ADD_PLAYER, CONDITIONALLY_JOIN_SQL, CREATE_SQL, GET_PLAYERS_SQL } from "./sql";
 
 const create = async (
   name: string,
@@ -33,4 +34,8 @@ const join = async (userId: number, gameId: number, password: string = "") => {
   return playerCount;
 };
 
-export default { create, join };
+const getPlayers = async (gameId: number) => {
+  return await db.manyOrNone(GET_PLAYERS_SQL, { gameId });
+};
+
+export default { create, join, getPlayers };

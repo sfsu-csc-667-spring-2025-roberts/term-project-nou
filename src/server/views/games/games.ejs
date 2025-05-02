@@ -4,9 +4,41 @@
     <title>UNO Game</title>
   </head>
   <body>
-    <div>
+    
+    <div class="game-container">
       <h1>Game Room <%= gameId %></h1>
-      <div></div>
+      
+      <div class="players-section">
+        <h2>Players in Game</h2>
+        <div id="players-list" class="players-list">
+          <!-- Players will be displayed here -->
+        </div>
+      </div>
     </div>
+
+    <script>
+      const gameId = <%= gameId %>;
+      
+      async function fetchPlayers() {
+        try {
+          const response = await fetch(`/games/${gameId}/players`);
+          const players = await response.json();
+          
+          const playersList = document.getElementById('players-list');
+          playersList.innerHTML = players.map(player => `
+            <div class="player-card">
+              <span class="player-username">${player.username}</span>
+              <span class="player-email">${player.email}</span>
+            </div>
+          `).join('');
+        } catch (error) {
+          console.error('Error fetching players:', error);
+        }
+      }
+
+      // Fetch players initially and then every 5 seconds
+      fetchPlayers();
+      setInterval(fetchPlayers, 10000);
+    </script>
   </body>
 </html> 

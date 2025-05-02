@@ -31,11 +31,11 @@ router.post("/create", async (request: Request, response: Response) => {
   }
 });
 
-router.post("/join/:gameId", async (request: Request, response: Response) => {
-  const { gameId } = request.params;
-  const { password } = request.body;
+router.post("/join", async (request: Request, response: Response) => {
+  const { gameId, password } = request.body;
   // @ts-ignore
   const userId = request.session.userId;
+  
   if (!userId) {
     return response.redirect("/auth/login");
   }
@@ -47,7 +47,6 @@ router.post("/join/:gameId", async (request: Request, response: Response) => {
     response.redirect(`/games/${gameId}`);
   } catch (error) {
     console.log({ error });
-
     response.redirect("/lobby");
   }
 });
@@ -56,6 +55,18 @@ router.get("/:gameId", (request: Request, response: Response) => {
   const { gameId } = request.params;
 
   response.render("games/games", { gameId });
+});
+
+router.get("/:gameId/players", async (request: Request, response: Response) => {
+  const { gameId } = request.params;
+
+  try {
+    const players = await Game.getPlayers(parseInt(gameId));
+    response.json(players);
+  } catch (error) {
+    console.log({ error });
+    response.status(500).json({ error: "Failed to get players" });
+  }
 });
 
 export default router;

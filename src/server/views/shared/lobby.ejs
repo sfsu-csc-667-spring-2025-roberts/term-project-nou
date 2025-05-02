@@ -41,10 +41,16 @@
            <img class="image" src="images/house.png" alt="create"> 
            <h2>Create Room</h2>
         </button>
-        <button class="join-game">
-           <img class="image" src="images/meeting.png" alt="join">
-           <h2>Join Room</h2>
-        </button>
+        <div class="join-game-form">
+            <form action="/games/join" method="post">
+                <input type="number" name="gameId" placeholder="Enter Room ID" required>
+                <input type="password" name="password" placeholder="Room Password (if any)">
+                <button type="submit" class="join-game">
+                    <img class="image" src="images/meeting.png" alt="join">
+                    <h2>Join Room</h2>
+                </button>
+            </form>
+        </div>
     </section>
 
     <a href="/auth/logout" style="color: red; text-decoration: none; font-size: 1.2rem">Logout</a>

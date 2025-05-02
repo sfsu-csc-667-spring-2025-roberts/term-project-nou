@@ -142,3 +142,40 @@ body {
   color: var(--text-color);
   font-size: 2rem;
 }
+
+.join-game-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.join-game-form input {
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+}
+
+.join-game-form input:focus {
+  outline: none;
+  border-color: #4CAF50;
+}
+
+.join-game-form button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 15px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.join-game-form button:hover {
+  background-color: #45a049;
+}

@@ -29,3 +29,10 @@ RETURNING (
   SELECT COUNT(*) AS playerCount FROM game_users WHERE game_id=$(gameId)
 )
 `;
+
+export const GET_PLAYERS_SQL = `
+SELECT u.id, u.username, u.email, gu.game_id AS game_user_id
+FROM users u
+JOIN game_users gu ON u.id = gu.user_id
+WHERE gu.game_id = $(gameId)
+`;
