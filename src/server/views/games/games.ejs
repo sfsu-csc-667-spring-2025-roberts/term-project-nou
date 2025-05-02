@@ -52,12 +52,11 @@
           
           if (response.ok) {
             const data = await response.json();
-            console.log('Game started:', data);
-            // Redirect to game play page or update UI accordingly
+            // Redirect to game play page
             window.location.href = `/games/${gameId}/play`;
           } else {
             const error = await response.json();
-            alert(error.message || 'Failed to start game');
+            alert(error.error || 'Failed to start game');
           }
         } catch (error) {
           console.error('Error starting game:', error);
