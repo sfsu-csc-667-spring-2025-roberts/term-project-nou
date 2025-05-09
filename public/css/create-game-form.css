@@ -24,6 +24,11 @@
   position: relative;
 }
 
+#create-game-container form {
+/* Ensure text remains black in dark mode */
+  color: black; 
+}
+
 #create-game-container form a#close-create-game-form {
   text-decoration: none;
   color: var(--color-border);
