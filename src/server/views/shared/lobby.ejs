@@ -8,13 +8,13 @@
   </head>
   <body>
     <%- include('header') %> 
-    <h1>Hello user <%= userId %></h1>
+    <h1>Hello user  <%= userId %> </h1>
     <h2>Welcome to the UNO lobby</h2>
     
     <div id="chatWindow" class="chat-container">
         <div id="chatHeader">
             <div id="moveableHeader">Public Chat 🌎</div>
-            <button id="toggleChat" style="margin-left: 10px; cursor: pointer;">▼</button>
+            <button id="toggleChat" style="margin-left: 1.5px; cursor: pointer;">▼</button>
         </div>
 
         <div class="messages" id="messages">
@@ -53,7 +53,9 @@
         </div>
     </section>
 
-    <a href="/auth/logout" style="color: red; text-decoration: none; font-size: 1.2rem">Logout</a>
+    <button class="logout">
+        <a href="/auth/logout">Logout</a>
+    </button>
     <%- include("../games/create-form") %>
 
 
