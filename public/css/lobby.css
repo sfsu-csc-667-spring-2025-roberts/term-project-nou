@@ -25,6 +25,7 @@ body {
 
 .chat-container.collapsed {
   height: 40px;
+  width: 18em;
 }
 
 #chatHeader {
