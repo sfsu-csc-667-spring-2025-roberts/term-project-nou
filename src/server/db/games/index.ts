@@ -1,6 +1,6 @@
 import db from "../connection";
 import { User } from "../users";
-import { ADD_PLAYER, CONDITIONALLY_JOIN_SQL, CREATE_SQL, GET_PLAYERS_SQL } from "./sql";
+import { ADD_PLAYER, CONDITIONALLY_JOIN_SQL, CREATE_SQL, GET_PLAYERS_SQL, LEAVE_GAME_SQL, START_GAME_SQL } from "./sql";
 
 const create = async (
   name: string,
@@ -38,4 +38,12 @@ const getPlayers = async (gameId: number) => {
   return await db.manyOrNone(GET_PLAYERS_SQL, { gameId });
 };
 
-export default { create, join, getPlayers };
+const leave = async (userId: number, gameId: number) => {
+  return await db.oneOrNone(LEAVE_GAME_SQL, { userId, gameId }); 
+};
+
+const start = async (gameId: number) => {
+    return await db.one(START_GAME_SQL, [gameId]);
+};
+
+export default { create, join, getPlayers, leave, start };

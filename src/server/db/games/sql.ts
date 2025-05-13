@@ -36,3 +36,18 @@ FROM users u
 JOIN game_users gu ON u.id = gu.user_id
 WHERE gu.game_id = $(gameId)
 `;
+
+export const LEAVE_GAME_SQL = `
+DELETE FROM game_users
+WHERE game_id = $(gameId) AND user_id = $(userId)
+RETURNING *;
+`;
+
+export const START_GAME_SQL = `
+UPDATE games
+SET started = TRUE
+WHERE id = $1
+RETURNING id, name, started;
+`;
+
+
