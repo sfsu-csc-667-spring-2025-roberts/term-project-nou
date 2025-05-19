@@ -1,0 +1,86 @@
+<!-- Create Room Form -->
+<form
+  id="createRoomForm"
+  action="/rooms/create-room"
+  method="POST"
+  class="create-room-form"
+>
+  <h2>Create New Room</h2>
+
+  <div class="form-group">
+    <label for="name">Room Name:</label>
+    <input
+      type="text"
+      id="name"
+      name="name"
+      required
+      placeholder="Enter room name"
+      maxlength="50"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="maxPlayers">Max Players:</label>
+    <select id="maxPlayers" name="maxPlayers" required>
+      <option value="2">2 Players</option>
+      <option value="3">3 Players</option>
+      <option value="4" selected>4 Players</option>
+      <option value="5">5 Players</option>
+      <option value="6">6 Players</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="isPrivate">Room Type:</label>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="isPrivate" value="false" checked />
+        Public Room
+      </label>
+      <label>
+        <input type="radio" name="isPrivate" value="true" />
+        Private Room
+      </label>
+    </div>
+  </div>
+
+  <div class="form-group password-group" style="display: none">
+    <label for="password">Room Password:</label>
+    <input
+      type="password"
+      id="password"
+      name="password"
+      placeholder="Enter room password"
+    />
+  </div>
+
+  <div class="form-group">
+    <label for="startingCards">Starting Cards:</label>
+    <select id="startingCards" name="startingCards" required>
+      <option value="5">5 Cards</option>
+      <option value="7" selected>7 Cards</option>
+      <option value="10">10 Cards</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="gameRules">Game Rules:</label>
+    <div class="checkbox-group">
+      <label>
+        <input type="checkbox" name="drawUntilPlayable" value="true" />
+        Draw Until Playable
+      </label>
+      <label>
+        <input type="checkbox" name="stacking" value="true" />
+        Allow Card Stacking
+      </label>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <button type="submit" class="create-button">Create Room</button>
+    <button type="button" class="cancel-button" id="cancelCreateRoom">
+      Cancel
+    </button>
+  </div>
+</form>

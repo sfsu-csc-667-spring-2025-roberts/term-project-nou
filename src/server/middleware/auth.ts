@@ -3,7 +3,7 @@ import session from "express-session";
 
 declare module "express-session" {
   interface SessionData {
-    userID?: string;
+    userId: number;
   }
 }
 
@@ -12,16 +12,19 @@ const sessionMiddleware = (
   response: Response,
   next: NextFunction
 ) => {
-  //@ts-ignore
-  console.log("Session ID: ", request.session.userId);
-  next();
-  //   if (request.session.userId !== undefined) {
-  //     //@ts-ignore
-  //     response.locals.userId = request.session.userId;
-  //     next();
-  //   } else {
-  //     response.redirect("/auth/login");
-  //   }
+  console.log("Session middleware check:", {
+    path: request.path,
+    sessionID: request.sessionID,
+    userId: request.session.userId,
+  });
+
+  if (request.session.userId !== undefined) {
+    response.locals.userId = request.session.userId;
+    next();
+  } else {
+    console.log("No active session, redirecting to login");
+    response.redirect("/auth/login");
+  }
 };
 
 export { sessionMiddleware };

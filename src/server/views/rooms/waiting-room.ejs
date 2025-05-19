@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UNO Waiting Room</title>
+    <link rel="stylesheet" href="/css/waiting-room.css" />
+    <link rel="stylesheet" href="/css/global.css" />
+  </head>
+  <body>
+    <div class="waiting-container" data-user-id="<%= userId %>" data-username ="<%= username %>" data-room-id="<%= roomId %>" data-is-owner="<%= isOwner %>">
+      <header class="waiting-header">
+        <h1>UNO Waiting Room: <span id="room-id"><%= roomId %></span></h1>
+        <div class="room-info">
+          <div class="player-count">
+            <span id="current-players">0</span>/<span id="max-players"><%= roomMaxPlayersInt %></span>
+            Players
+          </div>
+          <div class="room-controls">
+            <button id="leave-room" class="btn btn-danger">Leave Room</button>
+            <% if (isOwner) { %>
+              <button id="start-game" class="btn btn-primary">
+                Start Game
+              </button>
+            <% } %>
+          </div>
+        </div>
+      </header>
+
+      <div class="waiting-chat">
+        <div class="chat-header">
+          <h3>Room Chat 🌎</h3>
+          <button id="toggleChat">▼</button>
+        </div>
+        <div class="chat-body">
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-message system">
+              Welcome to the waiting room! Chat with other players here.
+            </div>
+          </div>
+          <div class="chat-input">
+            <input
+              type="text"
+              id="chat-message"
+              placeholder="Type a message..."
+            />
+            <button id="send-message" class="btn">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="waiting-content">
+        <h2>Waiting for players to join...</h2>
+        <div class="player-list-container">
+          <h3>Players in Room:</h3>
+          <ul id="waiting-players"></ul>
+          <div class="ready-controls">
+            <button id="ready-button" class="btn btn-success">Ready</button>
+            <div id="ready-status">Not Ready</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/js/waiting-room.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+  </body>
+</html>

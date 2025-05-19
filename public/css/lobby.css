@@ -14,13 +14,17 @@ body {
   height: 400px;
   background-color: white;
   border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   z-index: 1000;
-  transition: height 250ms ease-in-out, opacity 250ms ease-in-out;
-  border: 2px  black;
+  transition:
+    height 250ms ease-in-out,
+    opacity 250ms ease-in-out;
+  border: 2px black;
 }
 
 .chat-container.collapsed {
@@ -102,12 +106,6 @@ body.light-theme #toggleChat {
   border-left: 3px solid #0072bc;
 }
 
-.message:nth-child(even) {
-  align-self: flex-end;
-  border-left: none;
-  border-right: 3px solid #ed1c24;
-}
-
 .message .userId {
   font-weight: bold;
   color: #0072bc;
@@ -167,8 +165,14 @@ body.light-theme #toggleChat {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 768px) {
@@ -186,31 +190,38 @@ body.light-theme #toggleChat {
 }
 
 .message {
-  display: flex;
-  flex-direction: column;
-  padding: 8px;
-  background-color: var(--second-color);
-  border-radius: 4px;
-  max-width: 80%;
+  background-color: white;
+  padding: 0.75rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  max-width: 85%;
+  align-self: flex-start;
+  animation: fadeIn 0.3s ease-in-out;
+  border-left: 3px solid #0072bc;
+  margin-bottom: 0.5rem;
 }
 
 .message .userId {
   font-weight: bold;
-  color: var(--text-color);
-  margin-bottom: 4px;
+  color: #0072bc;
+  font-size: 0.95rem;
+  margin-bottom: 0.2rem;
 }
 
 .message .content {
-  color: var(--text-color);
+  word-break: break-word;
+  color: #222;
+  font-size: 1rem;
 }
 
 .message .timestamp {
-  font-size: 0.8em;
-  color: var(--text-color);
-  align-self: flex-end;
-  margin-top: 4px;
+  font-size: 0.85rem;
+  color: #737373;
+  text-align: right;
+  margin-top: 0.2rem;
 }
 
+/* 删除 .message:nth-child(even) 相关样式 */
 .message-form {
   display: flex;
   padding: 10px;
@@ -308,7 +319,7 @@ body.light-theme #toggleChat {
 
 .join-game-form input:focus {
   outline: none;
-  border-color: #4CAF50;
+  border-color: #4caf50;
 }
 
 .join-game-form button {
@@ -317,7 +328,7 @@ body.light-theme #toggleChat {
   justify-content: center;
   gap: 10px;
   padding: 15px;
-  background-color: #4CAF50;
+  background-color: #4caf50;
   color: white;
   border: none;
   border-radius: 4px;
@@ -340,7 +351,9 @@ button.logout {
   padding: 10px 20px;
   font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
   transition: background-color 0.3s ease;
 }
 
@@ -348,4 +361,95 @@ button.logout a {
   color: white;
   text-decoration: none;
   font-size: inherit;
+}
+
+.rooms-list {
+  margin-top: 2rem;
+  width: 100%;
+  max-width: 1200px;
+  max-height: 60vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #aaa #f5f5f5;
+}
+
+.rooms-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.room-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s;
+}
+
+.room-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.room-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.room-header h3 {
+  margin: 0;
+  color: #333;
+}
+
+.room-id {
+  color: #666;
+  font-size: 0.9em;
+}
+
+.room-info {
+  margin-bottom: 1rem;
+}
+
+.room-info > div {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.label {
+  color: #666;
+  font-weight: 500;
+}
+
+.value {
+  color: #333;
+}
+
+.join-form {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.join-button {
+  background: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  flex: 1;
+}
+
+.join-button:hover {
+  background: #45a049;
+}
+
+.no-rooms {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
 }

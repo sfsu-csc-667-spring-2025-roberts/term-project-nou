@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>UNO Game</title>
+    <link rel="stylesheet" href="/css/game-board.css" />
+    <link rel="stylesheet" href="/css/global.css" />
+  </head>
+  <body>
+    <div class="game-container" data-game-id="<%= gameId %>">
+      <header class="game-header">
+        <h1>UNO Game: <span id="room-id"><%= gameId %></span></h1>
+        <div class="game-info">
+          <div class="room-controls">
+            <button id="leave-room" class="btn btn-danger">Leave Game</button>
+          </div>
+        </div>
+      </header>
+
+      <!-- <div class="game-chat">
+        <div class="chat-header">
+          <h3>Game Chat 🌎</h3>
+          <button id="toggleChat">▼</button>
+        </div>
+        <div class="chat-body">
+          <div class="chat-messages" id="chat-messages">
+            <div class="chat-message system">Game started! Good luck!</div>
+          </div>
+          <div class="chat-input">
+            <input
+              type="text"
+              id="chat-message"
+              placeholder="Type a message..."
+            />
+            <button id="send-message" class="btn">Send</button>
+          </div>
+        </div>
+      </div> -->
+
+      <div class="game-board">
+        <div class="opponents-area">
+          <div id="other-players-container"></div>
+        </div>
+
+        <div class="table-area">
+          <div class="card-piles">
+            <div class="draw-pile" id="draw-pile">
+              <div class="uno-card back">
+                <div class="card-logo">UNO</div>
+              </div>
+            </div>
+            <div class="discard-pile" id="discard-pile"></div>
+          </div>
+
+          <div class="game-status">
+            <div id="current-turn">
+              <span id="current-player">Waiting for game to start...</span>'s
+              turn
+            </div>
+            <div id="game-direction">
+              Direction: <span id="direction-indicator">→</span>
+            </div>
+          </div>
+
+          <div class="game-controls">
+            <button id="draw-card" class="btn btn-primary" disabled>
+              Draw Card
+            </button>
+            <button id="say-uno" class="btn btn-warning" disabled>
+              Say UNO!
+            </button>
+          </div>
+
+          <div id="color-selector" class="hidden">
+            <h3>Select a color:</h3>
+            <div class="color-options">
+              <button class="color-btn red" data-color="red"></button>
+              <button class="color-btn blue" data-color="blue"></button>
+              <button class="color-btn green" data-color="green"></button>
+              <button class="color-btn yellow" data-color="yellow"></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="player-area">
+          <h3>Your Hand</h3>
+          <div class="player-hand" id="my-hand"></div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="/js/game-board.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+  </body>
+</html>

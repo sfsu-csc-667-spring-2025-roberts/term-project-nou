@@ -1,0 +1,698 @@
+/* General Styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: "Arial", sans-serif;
+}
+
+body {
+  background-color: #f0f0f0;
+  color: #333;
+  min-height: 100vh;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+}
+
+.btn:active {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background-color: #2196f3;
+  color: white;
+}
+
+.btn-danger {
+  background-color: #f44336;
+  color: white;
+}
+
+.btn-warning {
+  background-color: #ff9800;
+  color: white;
+}
+
+.game-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  gap: 20px;
+}
+
+.game-header {
+  background-color: #333;
+  color: white;
+  padding: 15px 20px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.game-header h1 {
+  font-size: 1.5rem;
+  margin-right: 20px;
+}
+
+.game-info {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+}
+
+.game-board {
+  flex: 1;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  background-color: #1a8c1a;
+  position: relative;
+  min-height: 600px;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.opponents-area {
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+}
+
+#other-players-container {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 30px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 10px;
+}
+
+.opponent {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: all 0.3s;
+}
+
+.opponent.current-player {
+  transform: scale(1.05);
+}
+
+.opponent.current-player::after {
+  content: "";
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  border: 3px solid yellow;
+  border-radius: 10px;
+  animation: pulse 1.5s infinite;
+  pointer-events: none;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 0, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 255, 0, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 255, 0, 0);
+  }
+}
+
+.opponent-name {
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 5px 15px;
+  border-radius: 20px;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+  z-index: 2;
+}
+
+.opponent-cards {
+  position: relative;
+  height: 100px;
+  width: 120px;
+}
+
+.opponent-card-count {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  background-color: #f44336;
+  color: white;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: bold;
+  z-index: 3;
+}
+
+.table-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  position: relative;
+}
+
+.card-piles {
+  display: flex;
+  justify-content: center;
+  gap: 60px;
+  margin-bottom: 30px;
+}
+
+.draw-pile,
+.discard-pile {
+  position: relative;
+  width: 120px;
+  height: 180px;
+}
+
+.draw-pile::before {
+  content: "DRAW";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.discard-pile::before {
+  content: "DISCARD";
+  position: absolute;
+  top: -25px;
+  left: 0;
+  right: 0;
+  text-align: center;
+  color: white;
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.game-status {
+  display: flex;
+  justify-content: space-between;
+  background-color: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  margin: 20px 0;
+  min-width: 300px;
+}
+
+#direction-indicator {
+  font-size: 1.2rem;
+  font-weight: bold;
+}
+
+.game-controls {
+  display: flex;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+#color-selector {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(255, 255, 255, 0.95);
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 5px 25px rgba(0, 0, 0, 0.5);
+  z-index: 100;
+  text-align: center;
+}
+
+#color-selector h3 {
+  margin-bottom: 20px;
+  color: #333;
+  font-size: 1.2rem;
+}
+
+.color-options {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+}
+
+.color-btn {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 3px solid white;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.color-btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.color-btn.red {
+  background-color: #f44336;
+}
+.color-btn.blue {
+  background-color: #2196f3;
+}
+.color-btn.green {
+  background-color: #4caf50;
+}
+.color-btn.yellow {
+  background-color: #ffeb3b;
+}
+
+.player-area {
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.2);
+  transition: all 0.3s;
+}
+
+.player-area.my-turn {
+  background-color: rgba(255, 255, 0, 0.2);
+  box-shadow: 0 0 15px rgba(255, 255, 0, 0.5) inset;
+}
+
+.player-area h3 {
+  color: white;
+  text-align: center;
+  margin-bottom: 15px;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.player-hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 5px;
+  min-height: 180px;
+  padding: 10px;
+}
+
+.uno-card {
+  width: 120px;
+  height: 180px;
+  border-radius: 10px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  transition: all 0.2s;
+  background-color: white;
+  overflow: hidden;
+}
+
+.uno-card.mini {
+  width: 80px;
+  height: 120px;
+}
+
+.uno-card.back {
+  background-color: #333;
+  background-image:
+    linear-gradient(
+      45deg,
+      #444 25%,
+      transparent 25%,
+      transparent 75%,
+      #444 75%,
+      #444
+    ),
+    linear-gradient(
+      45deg,
+      #444 25%,
+      transparent 25%,
+      transparent 75%,
+      #444 75%,
+      #444
+    );
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    10px 10px;
+  border: 5px solid white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-logo {
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  transform: rotate(-45deg);
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.uno-card.mini .card-logo {
+  font-size: 1.5rem;
+}
+
+.card-inner {
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.card-corner {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.top-left {
+  align-self: flex-start;
+}
+
+.bottom-right {
+  align-self: flex-end;
+  transform: rotate(180deg);
+}
+
+.card-center {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
+  font-weight: bold;
+  color: white;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.uno-card.red {
+  background-color: #f44336;
+}
+
+.uno-card.blue {
+  background-color: #2196f3;
+}
+
+.uno-card.green {
+  background-color: #4caf50;
+}
+
+.uno-card.yellow {
+  background-color: #ffeb3b;
+}
+
+.uno-card.yellow .card-corner,
+.uno-card.yellow .card-center {
+  color: #333;
+  text-shadow: none;
+}
+
+.uno-card.black {
+  background-color: #000;
+}
+
+.wild-colors {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: 1fr 1fr;
+  width: 80%;
+  height: 80%;
+  border-radius: 50%;
+  overflow: hidden;
+}
+
+.wild-red,
+.wild-blue,
+.wild-yellow,
+.wild-green {
+  width: 100%;
+  height: 100%;
+}
+
+.wild-red {
+  background-color: #f44336;
+}
+.wild-blue {
+  background-color: #2196f3;
+}
+.wild-yellow {
+  background-color: #ffeb3b;
+}
+.wild-green {
+  background-color: #4caf50;
+}
+
+.wild-plus-four {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: white;
+  background-color: rgba(0, 0, 0, 0.7);
+  padding: 5px 10px;
+  border-radius: 5px;
+}
+
+.player-hand .uno-card {
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
+}
+
+.player-hand .uno-card:hover {
+  transform: translateY(-20px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.4);
+}
+
+.player-hand .uno-card.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.player-hand .uno-card.disabled:hover {
+  transform: translateY(-5px);
+}
+
+/* Chat Styles */
+.game-chat {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  width: 350px;
+  height: 400px;
+  background-color: white;
+  border-radius: 1rem;
+  box-shadow:
+    0 20px 25px -5px rgba(0, 0, 0, 0.1),
+    0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  z-index: 1000;
+  transition:
+    height 250ms ease-in-out,
+    opacity 250ms ease-in-out;
+  border: 2px solid black;
+}
+
+.game-chat.collapsed {
+  height: 30px;
+}
+
+.chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1rem;
+  background-color: black;
+  color: white;
+  font-weight: bold;
+  user-select: none;
+}
+
+#toggleChat {
+  background: transparent;
+  color: white;
+  border: none;
+  font-size: 1.125rem;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+#toggleChat:hover {
+  transform: scale(1.2);
+  background: transparent;
+}
+
+.chat-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-messages {
+  flex: 1;
+  padding: 15px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.chat-message {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background-color: #f0f0f0;
+  max-width: 80%;
+  align-self: flex-start;
+  word-break: break-word;
+}
+
+.chat-message .username {
+  font-weight: bold;
+  margin-right: 5px;
+  color: #2196f3;
+}
+
+.chat-message.system {
+  background-color: #fffde7;
+  color: #795548;
+  font-style: italic;
+  align-self: center;
+  font-size: 0.9rem;
+}
+
+.chat-input {
+  display: flex;
+  padding: 10px;
+  border-top: 1px solid #eee;
+}
+
+.chat-input input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 15px;
+  }
+
+  .game-header h1 {
+    margin-bottom: 0;
+  }
+
+  .card-piles {
+    gap: 30px;
+  }
+
+  .uno-card {
+    width: 100px;
+    height: 150px;
+  }
+
+  .uno-card.mini {
+    width: 60px;
+    height: 90px;
+  }
+
+  .player-hand .uno-card:hover {
+    transform: translateY(-10px);
+  }
+
+  .color-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .game-chat {
+    width: 100%;
+    height: 300px;
+    bottom: 0;
+    right: 0;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .game-container {
+    padding: 10px;
+  }
+
+  .uno-card {
+    width: 80px;
+    height: 120px;
+  }
+
+  .card-center {
+    font-size: 2rem;
+  }
+
+  .card-corner {
+    font-size: 1.2rem;
+  }
+
+  .game-status {
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    min-width: auto;
+    width: 100%;
+  }
+}

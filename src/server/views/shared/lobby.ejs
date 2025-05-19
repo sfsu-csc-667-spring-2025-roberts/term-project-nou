@@ -4,11 +4,17 @@
     <title>UNO</title>
     <link rel="stylesheet" href="/css/lobby.css">
     <link rel="stylesheet" href="/css/global.css">
-    <link rel="stylesheet" href="/css/create-game-form.css">
+    <link rel="stylesheet" href="/css/create-room-form.css">
   </head>
+  <div id="create-game-container" class="modal-overlay">
+    <div class="modal-content">
+      <button id="close-create-game-form" class="close-btn">&times;</button>
+      <%- include("../rooms/create-form") %>
+    </div>
+  </div>
   <body>
     <%- include('header') %> 
-    <h1>Hello user  <%= userId %> </h1>
+    <h1 id="userId" data-userId="<%= userId %>" data-username="<%= username %>">Hello user  <%= userId %> </h1>
     <h2>Welcome to the UNO lobby</h2>
     
     <div id="chatWindow" class="chat-container">
@@ -37,79 +43,58 @@
     </div>
 
     <section class="game-options">
-        <button id = "create-game-button" class="create-game">
+        <button id="create-game-button" class="create-game">
            <img class="image" src="images/house.png" alt="create"> 
            <h2>Create Room</h2>
         </button>
-        <div class="join-game-form">
-            <form action="/games/join" method="post">
-                <input type="number" name="gameId" placeholder="Enter Room ID" required>
-                <input type="password" name="password" placeholder="Room Password (if any)">
-                <button type="submit" class="join-game">
-                    <img class="image" src="images/meeting.png" alt="join">
-                    <h2>Join Room</h2>
-                </button>
-            </form>
+        <div class="rooms-list">
+            <h2>Available Rooms</h2>
+            <div class="rooms-container">
+                <% if (rooms && rooms.length > 0) { %>
+                    <% rooms.forEach(function(room) { %>
+                        <div class="room-card">
+                            <div class="room-header">
+                                <h3><%= room.name %></h3>
+                                <span class="room-id">#<%= room.id %></span>
+                            </div>
+                            <div class="room-info">
+
+                                <div class="room-players">
+                                    <span class="label">Players:</span>
+                                    <span class="value"><%= room.current_players %>/<%= room.max_players %></span>
+                                </div>
+                                <div class="room-privacy">
+                                    <span class="label">Status:</span>
+                                    <span class="value"><%= room.is_private ? '🔒 Private' : '🌐 Public' %></span>
+                                </div>
+                            </div>
+                            <form action="/rooms/join/<%= room.id %>" method="post" class="join-form">
+                                <input type="hidden" name="roomId" value="<%= room.id %>">
+                                <% if (room.is_private) { %>
+                                    <input type="password" name="password" placeholder="Room Password" required>
+                                <% } %>
+                                <button type="submit" class="join-button">Join Room</button>
+                            </form>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="no-rooms">
+                        <p>No rooms available. Be the first to create one!</p>
+                    </div>
+                <% } %>
+            </div>
         </div>
     </section>
 
     <button class="logout">
         <a href="/auth/logout">Logout</a>
     </button>
-    <%- include("../games/create-form") %>
 
 
     <script src="/socket.io/socket.io.js"></script>
     <script src="js/lobby.js"></script>
     <script src="/js/header.js"></script>
-    <script>
-        const socket = io();
-        const messagesDiv = document.getElementById('messages');
-        const messageForm = document.getElementById('messageForm');
-        const messageInput = document.getElementById('messageInput');
+    <script src="/js/create-room.js"></script>
 
-        // Handle incoming messages
-        socket.on('chat message', (message) => {
-            const messageElement = document.createElement('div');
-            messageElement.className = 'message';
-            messageElement.innerHTML = `
-                <span class="userId">User ${message.userId} sent: </span>
-                <span class="content">${message.content}</span>
-                <span class="timestamp">&nbsp;${new Date(message.timestamp).toLocaleTimeString()}</span>
-            `;
-            messagesDiv.appendChild(messageElement);
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-
-        // Handle form submission
-        messageForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const message = messageInput.value.trim();
-            if (message) {
-                socket.emit('chat message', {
-                    content: message,
-                    userId: '<%= userId %>',
-                    timestamp: new Date()
-                });
-                messageInput.value = '';
-            }
-        });
-
-        // Load chat history
-        socket.on('chat history', (history) => {
-            messagesDiv.innerHTML = '';
-            history.forEach(message => {
-                const messageElement = document.createElement('div');
-                messageElement.className = 'message';
-                messageElement.innerHTML = `
-                    <span class="userId">User ${message.userId} sent: </span>
-                    <span class="content">${message.content}</span>
-                    <span class="timestamp">&nbsp;${new Date(message.timestamp).toLocaleTimeString()}</span>
-                `;
-                messagesDiv.appendChild(messageElement);
-            });
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-    </script>
   </body>
 </html>
