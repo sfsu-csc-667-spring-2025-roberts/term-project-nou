@@ -15,7 +15,11 @@ document.addEventListener("DOMContentLoaded", () => {
     readyButton: document.getElementById("ready-button"),
     readyStatus: document.getElementById("ready-status"),
     leaveRoom: document.getElementById("leave-room"),
+    startGame: document.getElementById("start-game"),
   };
+
+  // Debug logs
+  console.log("Start game button:", elements.startGame);
 
   // Validate required elements
   if (!elements.waitingPlayers || !elements.chatMessages) {
@@ -93,6 +97,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Room Management Functions
   const roomManager = {
+    startGame: () => {
+      socket.emit("startGame", { roomId: userInfo.roomId });
+    },
+
     leaveRoom: async () => {
       const confirmMsg = userInfo.isOwner
         ? "You are the room owner. Leaving will delete the room and remove all players. Are you sure?"
@@ -100,7 +108,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       if (confirm(confirmMsg)) {
         socket.emit("leaveRoom", { roomId: userInfo.roomId });
-
+        console.log("Leaving room");
         try {
           const endpoint = userInfo.isOwner
             ? `/rooms/${userInfo.roomId}/delete`
@@ -169,6 +177,15 @@ document.addEventListener("DOMContentLoaded", () => {
   elements.toggleChatButton.addEventListener("click", chatUI.toggleChat);
   elements.leaveRoom.addEventListener("click", roomManager.leaveRoom);
   elements.readyButton.addEventListener("click", readyManager.toggleReady);
+  if (elements.startGame) {
+    console.log("Attaching start game event listener");
+    elements.startGame.addEventListener("click", () => {
+      console.log("Start game button clicked");
+      roomManager.startGame();
+    });
+  } else {
+    console.log("Start game button not found in DOM");
+  }
 
   // Socket Event Handlers
   socket.on("connect", () => {
