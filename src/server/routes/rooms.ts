@@ -1,4 +1,4 @@
-import express from "express";
+import express, { RequestHandler } from "express";
 import { Request, Response } from "express";
 import { Room, User } from "../db";
 import session from "express-session";
@@ -29,7 +29,7 @@ interface RequestWithSession extends Request {
 
 router.post(
   "/create-room",
-  async (request: RequestWithSession, response: Response) => {
+  (async (request: RequestWithSession, response: Response) => {
     const { userId } = request.session;
     if (!userId) {
       return response
@@ -78,12 +78,12 @@ router.post(
         .status(500)
         .json({ message: "Failed to create room. Please try again." });
     }
-  }
+  }) as RequestHandler
 );
 
 router.post(
   "/join/:roomId",
-  async (request: RequestWithSession, response: Response) => {
+  (async (request: RequestWithSession, response: Response) => {
     const { userId } = request.session;
     if (!userId) {
       return response.redirect("/auth/login");
@@ -97,12 +97,12 @@ router.post(
     } catch (error) {
       handleError(error, "joining room", response);
     }
-  }
+  }) as RequestHandler
 );
 
 router.get(
   "/:roomId",
-  async (request: RequestWithSession, response: Response) => {
+  (async (request: RequestWithSession, response: Response) => {
     const { userId } = request.session;
     if (!userId) {
       return response.redirect("/auth/login");
@@ -127,12 +127,12 @@ router.get(
     } catch (error) {
       handleError(error, "getting room information", response);
     }
-  }
+  }) as RequestHandler
 );
 
 router.post(
   "/:roomId/leave",
-  async (request: RequestWithSession, response: Response) => {
+  (async (request: RequestWithSession, response: Response) => {
     const { userId } = request.session;
     if (!userId) {
       return response
@@ -156,12 +156,12 @@ router.post(
     } catch (error) {
       handleError(error, "leaving room", response);
     }
-  }
+  }) as RequestHandler
 );
 
 router.post(
   "/:roomId/delete",
-  async (request: RequestWithSession, response: Response) => {
+  (async (request: RequestWithSession, response: Response) => {
     const { userId } = request.session;
     if (!userId) {
       return response
@@ -187,7 +187,7 @@ router.post(
     } catch (error) {
       handleError(error, "deleting room", response);
     }
-  }
+  }) as RequestHandler
 );
 
 export default router;
