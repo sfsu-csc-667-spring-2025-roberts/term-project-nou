@@ -3,102 +3,147 @@ import { createCardElement, canPlayCard } from "../utils/cardUtils.js";
 
 // Update the entire game UI based on current game state
 export const updateGameUI = () => {
-  console.log("[Game UI] Updating game UI");
-  try {
-    updateTopCard();
-    updateCurrentPlayer();
-    updatePlayerHands();
-    updateGameStatus();
-    console.log("[Game UI] Game UI updated successfully");
-  } catch (error) {
-    console.error("[Game UI] Error updating game UI:", error);
+  console.log("[Game UI] Updating game UI with state:", gameState);
+  
+  // Ensure the game container exists
+  let gameContainer = document.querySelector('.game-container');
+  if (!gameContainer) {
+    gameContainer = document.createElement('div');
+    gameContainer.className = 'game-container';
+    document.body.appendChild(gameContainer);
   }
+
+  // Update the entire game UI structure
+  gameContainer.innerHTML = `
+    <div class="game-header">
+      <div id="game-status" class="game-status">Game Status: ${gameState.status}</div>
+      <div id="current-player" class="current-player">Current Player: ${getCurrentPlayerName()}</div>
+      <div id="game-direction" class="game-direction">Direction: ${gameState.direction === 1 ? 'Clockwise' : 'Counter-clockwise'}</div>
+    </div>
+
+    <div class="game-board">
+      <div id="top-card" class="top-card">
+        ${renderTopCard()}
+      </div>
+
+      <div id="player-hands" class="player-hands">
+        ${renderPlayerHands()}
+      </div>
+
+      <div id="action-buttons" class="action-buttons">
+        <button id="draw-card" ${!isMyTurn() ? 'disabled' : ''}>Draw Card</button>
+        <button id="say-uno" ${!isMyTurn() ? 'disabled' : ''}>Say UNO!</button>
+      </div>
+    </div>
+  `;
+
+  // Add event listeners after rendering
+  setupEventListeners();
+
+  updateMyHand();
 };
 
-const updateTopCard = () => {
-  console.log("[Game UI] Updating top card:", gameState.topCard);
-  const topCardElement = document.querySelector(".top-card");
-  if (!topCardElement) {
-    console.error("[Game UI] Top card element not found");
-    return;
+const getCurrentPlayerName = () => {
+  const player = getPlayerById(gameState.currentPlayer);
+  return player ? player.username : 'Unknown';
+};
+
+const renderTopCard = () => {
+  if (!gameState.topCard) {
+    return '<div class="no-card">No card played yet</div>';
   }
 
-  if (gameState.topCard) {
-    topCardElement.innerHTML = `
-      <div class="card ${gameState.topCard.color}">
-        <span class="card-value">${gameState.topCard.value}</span>
+  const card = gameState.topCard;
+  return `
+    <div class="card ${card.color} ${card.type}">
+      <div class="card-value">${formatCardValue(card)}</div>
+    </div>
+  `;
+};
+
+const renderPlayerHands = () => {
+  return gameState.players.map(player => {
+    const isCurrentPlayer = player.id === gameState.currentPlayer;
+    const isMyHand = player.id === gameState.myId;
+    
+    return `
+      <div class="player-hand ${isCurrentPlayer ? 'current' : ''} ${isMyHand ? 'my-hand' : ''}">
+        <div class="player-name">${player.username} ${isMyHand ? '(You)' : ''}</div>
+        <div class="cards-container">
+          ${renderPlayerCards(player)}
+        </div>
       </div>
     `;
-  } else {
-    topCardElement.innerHTML = '<div class="card-placeholder">No card played yet</div>';
-  }
+  }).join('');
 };
 
-// Update the current player display
-const updateCurrentPlayer = () => {
-  console.log("[Game UI] Updating current player display");
-  const currentPlayer = getCurrentPlayer();
-  const currentPlayerElement = document.querySelector(".current-player");
-  
-  if (!currentPlayerElement) {
-    console.error("[Game UI] Current player element not found");
-    return;
-  }
-
-  if (currentPlayer) {
-    const player = getPlayerById(currentPlayer);
-    currentPlayerElement.textContent = `Current Player: ${player ? player.username : 'Unknown'}`;
-    currentPlayerElement.classList.toggle("my-turn", isMyTurn());
-  } else {
-    currentPlayerElement.textContent = "Waiting for game to start...";
-    currentPlayerElement.classList.remove("my-turn");
-  }
-};
-
-const updatePlayerHands = () => {
-  console.log("[Game UI] Updating player hands");
-  const playersContainer = document.querySelector(".players-container");
-  if (!playersContainer) {
-    console.error("[Game UI] Players container not found");
-    return;
-  }
-
-  playersContainer.innerHTML = gameState.players
-    .filter(player => player.id !== gameState.myId)
-    .map(player => `
-      <div class="player-hand ${player.id === gameState.currentPlayer ? 'current-player' : ''}">
-        <div class="player-info">
-          <span class="player-name">${player.username}</span>
-          <span class="card-count">${player.hand ? player.hand.length : 0} cards</span>
-        </div>
-        <div class="player-cards">
-          ${Array(player.hand ? player.hand.length : 0).fill('<div class="card back"></div>').join('')}
-        </div>
+const renderPlayerCards = (player) => {
+  if (player.id === gameState.myId) {
+    return player.hand.map(card => `
+      <div class="card ${card.color} ${card.type}" data-card-id="${card.id}">
+        <div class="card-value">${formatCardValue(card)}</div>
       </div>
     `).join('');
+  } else {
+    return Array(player.hand ? player.hand.length : 0).fill(`
+      <div class="card back"></div>
+    `).join('');
+  }
 };
 
-const updateGameStatus = () => {
-  console.log("[Game UI] Updating game status");
-  const statusElement = document.querySelector(".game-status");
-  if (!statusElement) {
-    console.error("[Game UI] Game status element not found");
-    return;
+const formatCardValue = (card) => {
+  switch (card.type) {
+    case 'number':
+      return card.value;
+    case 'skip':
+      return '⏭️';
+    case 'reverse':
+      return '🔄';
+    case 'draw2':
+      return '+2';
+    case 'wild':
+      return '🎨';
+    case 'wild_draw4':
+      return '+4';
+    default:
+      return '?';
+  }
+};
+
+const setupEventListeners = () => {
+  // Draw card button
+  const drawCardBtn = document.getElementById('draw-card');
+  if (drawCardBtn) {
+    drawCardBtn.onclick = () => {
+      if (isMyTurn()) {
+        socket.emit('drawCard', { gameId: gameState.roomId });
+      }
+    };
   }
 
-  switch (gameState.status) {
-    case "waiting":
-      statusElement.textContent = "Waiting for players...";
-      break;
-    case "playing":
-      statusElement.textContent = isMyTurn() ? "Your turn!" : "Waiting for other players...";
-      break;
-    case "finished":
-      statusElement.textContent = "Game Over!";
-      break;
-    default:
-      statusElement.textContent = "Unknown game status";
+  // Say UNO button
+  const sayUnoBtn = document.getElementById('say-uno');
+  if (sayUnoBtn) {
+    sayUnoBtn.onclick = () => {
+      if (isMyTurn()) {
+        socket.emit('sayUno', { gameId: gameState.roomId });
+      }
+    };
   }
+
+  // Card click events
+  const cards = document.querySelectorAll('.card:not(.back)');
+  cards.forEach(card => {
+    card.onclick = () => {
+      if (isMyTurn()) {
+        const cardId = card.dataset.cardId;
+        socket.emit('playCard', {
+          gameId: gameState.roomId,
+          cardId: cardId
+        });
+      }
+    };
+  });
 };
 
 // Update the display of other players' cards and information
@@ -168,26 +213,21 @@ export const updateDiscardPile = () => {
 
 // Update the player's hand display
 export const updateMyHand = () => {
-  console.log("[Game UI] Updating my hand UI");
   const myHandElement = document.getElementById("my-hand");
-  if (!myHandElement) return;
-
+  if (!myHandElement) {
+    console.log("[UNO DEBUG] #my-hand not found in DOM");
+    return;
+  }
   myHandElement.innerHTML = "";
-  gameState.myHand.forEach((card) => {
-    const cardDiv = createCardElement(card);
-    const isPlayable = gameState.myTurn && canPlayCard(card);
-
-    cardDiv.classList.toggle("playable", isPlayable);
-    cardDiv.classList.toggle("disabled", !isPlayable);
-
-    if (isPlayable) {
-      cardDiv.replaceWith(cardDiv.cloneNode(true));
+  if (Array.isArray(gameState.myHand)) {
+    console.log("[UNO DEBUG] updateMyHand called, cards:", gameState.myHand);
+    gameState.myHand.forEach(card => {
+      const cardDiv = createCardElement(card);
       myHandElement.appendChild(cardDiv);
-      cardDiv.addEventListener("click", () => handleCardClick(card));
-    } else {
-      myHandElement.appendChild(cardDiv);
-    }
-  });
+    });
+  } else {
+    console.log("[UNO DEBUG] gameState.myHand is not an array", gameState.myHand);
+  }
 
   fanOutCards(myHandElement);
   updateUnoButton();

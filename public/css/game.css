@@ -1,7 +1,250 @@
+/* Game Container */
 .game-container {
-  max-width: 1200px;
-  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   padding: 20px;
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  color: #fff;
+  font-family: Arial, sans-serif;
+}
+
+/* Game Header */
+.game-header {
+  width: 100%;
+  max-width: 1200px;
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.game-status {
+  font-size: 1.2em;
+  margin-bottom: 10px;
+  color: #e94560;
+  font-weight: bold;
+}
+
+.current-player {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  color: #4cc9f0;
+}
+
+.game-direction {
+  font-size: 1em;
+  margin-bottom: 20px;
+  color: #f72585;
+}
+
+/* Game Board */
+.game-board {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+/* Top Card */
+.top-card {
+  margin: 20px 0;
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  min-height: 120px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.no-card {
+  color: rgba(255, 255, 255, 0.5);
+  font-style: italic;
+}
+
+/* Player Hands */
+.player-hands {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.player-hand {
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.player-hand.current {
+  background: rgba(79, 209, 197, 0.1);
+  box-shadow: 0 0 10px rgba(79, 209, 197, 0.3);
+}
+
+.player-hand.my-hand {
+  background: rgba(233, 69, 96, 0.1);
+  box-shadow: 0 0 10px rgba(233, 69, 96, 0.3);
+}
+
+.player-name {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  color: #4cc9f0;
+  font-weight: bold;
+}
+
+.cards-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px;
+  justify-content: center;
+}
+
+/* Cards */
+.card {
+  width: 80px;
+  height: 120px;
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 1.5em;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  position: relative;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  user-select: none;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+}
+
+.card.back {
+  background: linear-gradient(45deg, #f72585, #7209b7);
+  cursor: default;
+}
+
+.card.red {
+  background: linear-gradient(135deg, #ff6b6b, #ff0000);
+  color: white;
+}
+
+.card.blue {
+  background: linear-gradient(135deg, #4cc9f0, #4361ee);
+  color: white;
+}
+
+.card.green {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  color: white;
+}
+
+.card.yellow {
+  background: linear-gradient(135deg, #f1c40f, #f39c12);
+  color: black;
+}
+
+.card.wild {
+  background: linear-gradient(135deg, #7209b7, #3a0ca3);
+  color: white;
+}
+
+.card-value {
+  font-weight: bold;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+/* Action Buttons */
+.action-buttons {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.action-buttons button {
+  padding: 10px 20px;
+  font-size: 1em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background: #4cc9f0;
+  color: white;
+  font-weight: bold;
+}
+
+.action-buttons button:hover:not(:disabled) {
+  background: #4361ee;
+  transform: translateY(-2px);
+}
+
+.action-buttons button:disabled {
+  background: #666;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Animations */
+@keyframes cardPlay {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.card.played {
+  animation: cardPlay 0.5s ease;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .card {
+    width: 60px;
+    height: 90px;
+    font-size: 1.2em;
+  }
+
+  .player-hand {
+    padding: 10px;
+  }
+
+  .action-buttons {
+    flex-direction: column;
+  }
+
+  .game-header {
+    padding: 0 10px;
+  }
+}
+
+/* Chat Messages */
+.chat-message {
+  padding: 10px;
+  margin: 5px 0;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.chat-message.system {
+  background: rgba(79, 209, 197, 0.1);
+  color: #4cc9f0;
+}
+
+.chat-message.highlight {
+  background: rgba(233, 69, 96, 0.2);
+  color: #e94560;
+  font-weight: bold;
 }
 
 .players-section {

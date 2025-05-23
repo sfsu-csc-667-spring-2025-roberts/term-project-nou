@@ -1,4 +1,4 @@
-// 游戏状态管理
+// Game state management
 export const gameState = {
   players: [],
   currentPlayer: null,
@@ -12,6 +12,10 @@ export const gameState = {
   minPlayersRequired: 2,
   status: "waiting",
   roomId: null,
+  currentColor: null,
+  lastActionTime: null,
+  drawPileCount: 0,
+  discardPileCount: 0
 };
 
 export const setMyId = (id) => {
@@ -26,21 +30,71 @@ export const updateGameState = (data) => {
     return false;
   }
 
+  // DEBUG: Log structure of players
+  if (data.players) {
+    console.log("[DEBUG] data.players structure:", JSON.stringify(data.players, null, 2));
+  }
+
   try {
-    gameState.players = data.players || gameState.players;
-    gameState.currentPlayer = data.currentPlayer || gameState.currentPlayer;
-    gameState.topCard = data.topCard || gameState.topCard;
-    gameState.direction = data.direction || gameState.direction;
-    gameState.status = data.status || gameState.status;
-    gameState.roomId = data.roomId || gameState.roomId;
+    // Update players and their hands
+    if (data.players) {
+      gameState.players = data.players.map(player => ({
+        ...player,
+        hand: player.hand || [],
+        cardCount: player.hand ? player.hand.length : 0
+      }));
+    }
+
+    // Update current player
+    if (data.currentPlayer) {
+      gameState.currentPlayer = data.currentPlayer;
+      gameState.myTurn = data.currentPlayer === gameState.myId;
+    }
+
+    // Update top card
+    if (data.topCard) {
+      gameState.topCard = data.topCard;
+    }
+
+    // Update direction
+    if (data.direction) {
+      gameState.direction = data.direction === 'clockwise' ? 1 : -1;
+    }
+
+    // Update status
+    if (data.status) {
+      gameState.status = data.status;
+    }
+
+    // Update room ID
+    if (data.roomId) {
+      gameState.roomId = data.roomId;
+    }
+
+    // Update current color
+    if (data.currentColor) {
+      gameState.currentColor = data.currentColor;
+    }
+
+    // Update card counts
+    if (data.drawPileCount !== undefined) {
+      gameState.drawPileCount = data.drawPileCount;
+    }
+    if (data.discardPileCount !== undefined) {
+      gameState.discardPileCount = data.discardPileCount;
+    }
 
     // Update player hands
-    if (data.playerHands) {
-      // Find my hand in the player hands
-      const myHand = data.playerHands[gameState.myId];
+    if (data.player_hands) {
+      const myHand = data.player_hands[gameState.myId];
       if (myHand) {
         gameState.myHand = myHand;
       }
+    }
+
+    // Update last action time
+    if (data.lastActionTime) {
+      gameState.lastActionTime = new Date(data.lastActionTime);
     }
 
     console.log("[Game State] Updated state:", {
@@ -50,7 +104,11 @@ export const updateGameState = (data) => {
       direction: gameState.direction,
       status: gameState.status,
       roomId: gameState.roomId,
-      myHand: gameState.myHand.length
+      myHand: gameState.myHand.length,
+      currentColor: gameState.currentColor,
+      drawPileCount: gameState.drawPileCount,
+      discardPileCount: gameState.discardPileCount,
+      lastActionTime: gameState.lastActionTime
     });
 
     return true;
@@ -69,6 +127,7 @@ export const startGame = (data) => {
 
   try {
     updateGameState(data);
+    gameState.gameStarted = true;
     gameState.status = "playing";
     console.log("[Game State] Game started successfully");
     return true;
@@ -87,6 +146,11 @@ export const updateMyHand = (hand) => {
 
   try {
     gameState.myHand = hand;
+    // Update player's card count in players array
+    const myPlayerIndex = gameState.players.findIndex(p => p.id === gameState.myId);
+    if (myPlayerIndex !== -1) {
+      gameState.players[myPlayerIndex].cardCount = hand.length;
+    }
     console.log("[Game State] Hand updated successfully");
     return true;
   } catch (error) {
@@ -96,28 +160,22 @@ export const updateMyHand = (hand) => {
 };
 
 export const getCurrentPlayer = () => {
-  console.log("[Game State] Getting current player:", gameState.currentPlayer);
   return gameState.currentPlayer;
 };
 
 export const isMyTurn = () => {
-  const isTurn = gameState.currentPlayer === gameState.myId;
-  console.log("[Game State] Checking if it's my turn:", isTurn);
-  return isTurn;
+  return gameState.currentPlayer === gameState.myId;
 };
 
 export const getPlayerById = (id) => {
-  console.log("[Game State] Getting player by ID:", id);
   return gameState.players.find(player => player.id === id);
 };
 
 export const getPlayerIndex = (id) => {
-  console.log("[Game State] Getting player index for ID:", id);
   return gameState.players.findIndex(player => player.id === id);
 };
 
 export const getNextPlayer = () => {
-  console.log("[Game State] Getting next player");
   const currentIndex = getPlayerIndex(gameState.currentPlayer);
   if (currentIndex === -1) {
     console.error("[Game State] Current player not found in players array");
@@ -125,10 +183,40 @@ export const getNextPlayer = () => {
   }
 
   const nextIndex = (currentIndex + gameState.direction + gameState.players.length) % gameState.players.length;
-  console.log("[Game State] Next player index:", nextIndex);
   return gameState.players[nextIndex];
 };
 
 export const setMinPlayers = (minPlayers) => {
   gameState.minPlayersRequired = minPlayers;
+};
+
+export const canPlayCard = (card) => {
+  if (!gameState.topCard) return true;
+  
+  // Wild cards can always be played
+  if (card.type === 'wild' || card.type === 'wild_draw4') return true;
+  
+  // Check color match
+  if (card.color === gameState.currentColor) return true;
+  
+  // Check value match
+  if (card.value === gameState.topCard.value) return true;
+  
+  return false;
+};
+
+export const resetGameState = () => {
+  gameState.players = [];
+  gameState.currentPlayer = null;
+  gameState.direction = 1;
+  gameState.topCard = null;
+  gameState.myHand = [];
+  gameState.myTurn = false;
+  gameState.selectedWildCard = null;
+  gameState.gameStarted = false;
+  gameState.status = "waiting";
+  gameState.currentColor = null;
+  gameState.lastActionTime = null;
+  gameState.drawPileCount = 0;
+  gameState.discardPileCount = 0;
 };

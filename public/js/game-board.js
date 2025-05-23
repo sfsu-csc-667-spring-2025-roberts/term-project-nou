@@ -59,24 +59,76 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   const socket = io();
-  console.log("[Game Board] Socket.IO instance created");
+  console.log("[DEBUG] Socket.IO instance created");
+  
+  socket.on("connect", () => {
+    console.log("[DEBUG] Socket connected with ID:", socket.id);
+  });
+
+  socket.on("connect_error", (error) => {
+    console.error("[DEBUG] Socket connection error:", error);
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.warn("[DEBUG] Socket disconnected:", reason);
+  });
   
   setupSocketEvents(socket, gameId, username);
   setupChatEvents(socket, gameId);
 
   function updateGameState(data) {
-    console.log("[Game Board] Updating game state with data:", data);
-    gameState.players = data.players || gameState.players;
-    gameState.currentPlayer = data.currentPlayer;
-    gameState.direction = data.direction;
-    gameState.topCard = data.topCard;
-    gameState.myTurn = data.currentPlayer === gameState.myId;
+    console.log("[DEBUG] Updating game state with data:", data);
+    console.log("[DEBUG] Current game state before update:", {
+      myTurn: gameState.myTurn,
+      currentPlayer: gameState.currentPlayer,
+      myId: gameState.myId
+    });
 
-    const me = gameState.players.find((p) => p.id === gameState.myId);
-    if (me && me.hand) {
-      console.log("[Game Board] Updating my hand from full game state update.");
-      gameState.myHand = me.hand;
+    // Update players and their hands
+    if (data.players) {
+      gameState.players = data.players;
     }
+
+    // Update current player
+    if (data.current_player_id) {
+      gameState.currentPlayer = data.current_player_id;
+      gameState.myTurn = (data.current_player_id === gameState.myId);
+    }
+
+    // Update direction
+    if (data.direction) {
+      gameState.direction = data.direction === 'clockwise' ? 1 : -1;
+    }
+
+    // Update top card
+    if (data.top_card) {
+      gameState.topCard = data.top_card;
+      gameState.currentColor = data.top_card.color;
+    }
+
+    // Update my hand
+    if (data.player_hands && gameState.myId) {
+      const myHand = data.player_hands[gameState.myId];
+      if (myHand) {
+        gameState.myHand = myHand;
+      }
+    }
+
+    // Update card counts
+    if (data.draw_pile_count !== undefined) {
+      gameState.drawPileCount = data.draw_pile_count;
+    }
+    if (data.discard_pile_count !== undefined) {
+      gameState.discardPileCount = data.discard_pile_count;
+    }
+
+    console.log("[DEBUG] Game state after update:", {
+      myTurn: gameState.myTurn,
+      currentPlayer: gameState.currentPlayer,
+      myId: gameState.myId,
+      topCard: gameState.topCard,
+      currentColor: gameState.currentColor
+    });
 
     updateGameUI();
   }
@@ -85,7 +137,7 @@ document.addEventListener("DOMContentLoaded", () => {
     console.log("Updating Game UI. My turn:", gameState.myTurn);
 
     const currentPlayerObj = gameState.players.find(
-      (p) => p.id === gameState.currentPlayer
+      (p) => String(p.id) === String(gameState.currentPlayer)
     );
     if (currentPlayerElement && currentPlayerObj) {
       currentPlayerElement.textContent =
@@ -161,14 +213,14 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateDiscardPile() {
     if (!discardPileElement) return;
+    console.log("[DEBUG] Updating discard pile with card:", gameState.topCard);
+    
     discardPileElement.innerHTML = "";
-
     if (gameState.topCard) {
       const cardDiv = createCardElement(gameState.topCard);
       discardPileElement.appendChild(cardDiv);
     } else {
-      discardPileElement.innerHTML =
-        '<div class="card-placeholder">Discard Pile</div>';
+      discardPileElement.innerHTML = '<div class="card-placeholder">Discard Pile</div>';
     }
   }
 
@@ -176,9 +228,14 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!myHandElement) return;
     myHandElement.innerHTML = "";
 
+    console.log("[DEBUG] Updating my hand. Cards:", gameState.myHand);
+    console.log("[DEBUG] My turn:", gameState.myTurn);
+
     gameState.myHand.forEach((card) => {
       const cardDiv = createCardElement(card);
       const isPlayable = gameState.myTurn && canPlayCard(card);
+      
+      console.log("[DEBUG] Card:", card, "isPlayable:", isPlayable);
 
       cardDiv.classList.toggle("playable", isPlayable);
       cardDiv.classList.toggle("disabled", !isPlayable);
@@ -195,7 +252,15 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function handleCardClick(card) {
-    console.log("Card clicked:", card, "My turn:", gameState.myTurn);
+    console.log("[DEBUG] Card clicked:", card);
+    console.log("[DEBUG] My turn:", gameState.myTurn);
+    console.log("[DEBUG] Can play card:", canPlayCard(card));
+    console.log("[DEBUG] Game state:", {
+      currentPlayer: gameState.currentPlayer,
+      myId: gameState.myId,
+      topCard: gameState.topCard
+    });
+    
     if (gameState.myTurn && canPlayCard(card)) {
       if (card.type === "wild" || card.type === "wild_draw_four") {
         console.log("Wild card clicked, showing color selector.");
@@ -313,25 +378,34 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function canPlayCard(card) {
     if (!gameState.topCard) return true;
-
+    
     // Wild cards can always be played
     if (card.type === "wild" || card.type === "wild_draw4") {
       return true;
     }
-
-    // Check if card matches top card's color or value
-    return (
-      card.color === gameState.topCard.color ||
-      (card.type === gameState.topCard.type && card.value === gameState.topCard.value)
-    );
+    
+    // Check color match with current color
+    if (card.color === gameState.currentColor) {
+      return true;
+    }
+    
+    // Check value match with top card
+    if (card.value === gameState.topCard.value) {
+      return true;
+    }
+    
+    return false;
   }
 
   function playCard(card, chosenColor = null) {
     console.log(
-      `Attempting to play card:`,
+      `[DEBUG] Attempting to play card:`,
       card,
       `Chosen color: ${chosenColor}`
     );
+    console.log("[DEBUG] Socket connected:", socket.connected);
+    console.log("[DEBUG] Game ID:", gameId);
+    
     const cardData = { ...card };
     if (
       (card.type === "wild" || card.type === "wild_draw_four") &&
@@ -339,7 +413,32 @@ document.addEventListener("DOMContentLoaded", () => {
     ) {
       cardData.declaredColor = chosenColor;
     }
-    socket.emit("playCard", { roomId: gameId, card: cardData });
+    
+    const playCardData = {
+      gameId: gameId,
+      cardId: card.id,
+      declaredColor: cardData.declaredColor
+    };
+    
+    console.log("[DEBUG] Emitting playCard with data:", playCardData);
+    
+    // Remove the card from hand immediately for better UX
+    gameState.myHand = gameState.myHand.filter(c => c.id !== card.id);
+    updateMyHand();
+    
+    socket.emit("playCard", playCardData, (response) => {
+      console.log("[DEBUG] PlayCard response:", response);
+      if (response && response.error) {
+        // If there was an error, add the card back to hand
+        gameState.myHand.push(card);
+        updateMyHand();
+        addChatMessage({
+          username: "System",
+          message: `Error: ${response.error}`,
+          type: "system",
+        });
+      }
+    });
   }
 
   function showColorSelector() {
@@ -461,13 +560,23 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Socket Events
   socket.on("gameState", (data) => {
-    console.log("Received game state update:", data);
+    console.log("[DEBUG] Received gameState event:", data);
     updateGameState(data);
   });
 
   socket.on("cardPlayed", (data) => {
-    console.log("Received cardPlayed event:", data);
+    console.log("[DEBUG] Received cardPlayed event:", data);
     const { player, card } = data;
+    
+    // Update top card immediately
+    gameState.topCard = card;
+    gameState.currentColor = card.declaredColor || card.color;
+    
+    // Update UI
+    updateDiscardPile();
+    updateGameUI();
+    
+    // Show message
     const playerName = player.id === gameState.myId ? "You" : player.username;
     let cardDesc = formatCardDescription(card);
     addChatMessage({
@@ -475,6 +584,8 @@ document.addEventListener("DOMContentLoaded", () => {
       message: `${playerName} played ${cardDesc}`,
       type: "system",
     });
+    
+    // Add animation
     if (discardPileElement) {
       discardPileElement.classList.add("card-played-animation");
       setTimeout(
@@ -562,6 +673,15 @@ document.addEventListener("DOMContentLoaded", () => {
     addChatMessage(data);
   });
 
+  socket.on("error", (error) => {
+    console.error("[DEBUG] Socket error:", error);
+    addChatMessage({
+      username: "System",
+      message: `Error: ${error.message}`,
+      type: "system",
+    });
+  });
+
   // Initial game state fetch
   fetch(`/games/${gameId}/state`)
     .then((response) => {
@@ -571,14 +691,14 @@ document.addEventListener("DOMContentLoaded", () => {
       return response.json();
     })
     .then((data) => {
-      console.log("Initial game state:", data);
-      if (!data || !data.gameId) {
-        throw new Error("Invalid game state received");
+      console.log("[DEBUG] Initial game state:", data);
+      if (data.myId) {
+        gameState.myId = typeof data.myId === "string" ? parseInt(data.myId, 10) : data.myId;
       }
       updateGameState(data);
     })
     .catch((error) => {
-      console.error("Error fetching initial game state:", error);
+      console.error("[DEBUG] Error fetching initial game state:", error);
       addChatMessage({
         username: "System",
         message: "Error loading game state. Please refresh the page.",
