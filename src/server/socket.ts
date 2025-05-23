@@ -6,6 +6,7 @@
 import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { Room, Message, User } from "./db";
+import db from "./db/connection";
 
 // Type Definitions
 interface Message {
@@ -62,6 +63,10 @@ export function setupSocket(server: HttpServer) {
   // Error handling utility
   const handleError = (error: any, context: string) => {
     console.error(`Error in ${context}:`, error);
+    return {
+      message: error instanceof Error ? error.message : 'An unexpected error occurred',
+      context
+    };
   };
 
   // Socket connection handler
@@ -75,7 +80,8 @@ export function setupSocket(server: HttpServer) {
         await User.updateSocketId(userId, socket.id);
         console.log(`Updated socket_id for user ${userId}`);
       } catch (error) {
-        handleError(error, `updating socket_id for user ${userId}`);
+        const errorObj = handleError(error, `updating socket_id for user ${userId}`);
+        socket.emit("error", errorObj);
       }
     });
 
@@ -155,6 +161,7 @@ export function setupSocket(server: HttpServer) {
 
     // Room Management Handlers
     socket.on("joinRoom", async ({ roomId }) => {
+      console.log(`[Socket] User ${socket.data.userId} joining room ${roomId}`);
       try {
         socket.join(roomId);
         const members = await Room.getRoomUsers(Number(roomId));
@@ -164,79 +171,96 @@ export function setupSocket(server: HttpServer) {
         );
 
         if (joiningUser) {
+          console.log(`[Socket] Emitting playerJoined event for user ${joiningUser.username}`);
           io.to(roomId).emit("playerJoined", {
             username: joiningUser.username,
           });
         }
 
+        console.log(`[Socket] Emitting roomMembersUpdate event for room ${roomId}`);
         io.to(roomId).emit("roomMembersUpdate", { members, roomOwner });
         
         // Update lobby with new room list
         const rooms = await Room.getAllRooms();
         io.emit("roomListUpdate", rooms);
       } catch (error) {
-        handleError(error, `joining room ${roomId}`);
+        console.error(`[Socket] Error joining room ${roomId}:`, error);
       }
     });
 
-    socket.on("leaveRoom", async ({ roomId, isOwner }) => {
+    socket.on("leaveRoom", async (roomId: number) => {
       try {
-        const members = await Room.getRoomUsers(Number(roomId));
-        const roomOwner = await Room.getRoomOwner(Number(roomId));
-        const socketUser = members.find(
-          (member) => member.socket_id === socket.id
-        );
+        const userId = socket.data.userId;
+        if (!userId) {
+          throw new Error("User not authenticated");
+        }
 
-        if (!socketUser) {
-          console.error(`No user found for socket ${socket.id}`);
+        console.log(`[Socket] User ${userId} leaving room ${roomId}`);
+        const result = await Room.leave_room(userId, roomId);
+        
+        if (!result || !result.result) {
+          throw new Error("Failed to leave room");
+        }
+
+        // Leave the socket room
+        socket.leave(`room:${roomId}`);
+
+        // If the room was deleted (owner left)
+        if (result.result.deleted) {
+          console.log(`[Socket] Room ${roomId} was deleted by owner ${userId}`);
+          socket.emit("roomDeleted");
           return;
         }
 
-        // Emit events before leaving
-        io.to(roomId).emit("playerLeft", { 
-          username: socketUser.username,
-          remainingPlayers: members.length - 1
-        });
+        // Regular user left
+        console.log(`[Socket] User ${userId} successfully left room ${roomId}`);
+        
+        // If the room is in playing state, clean up game state
+        if (result.result.status === 'playing') {
+          // Get the game ID for this room
+          const game = await db.oneOrNone(
+            `SELECT id FROM games WHERE room_id = $1`,
+            [roomId]
+          );
 
-        if (isOwner || (roomOwner && socketUser.id === roomOwner.id)) {
-          // Room owner is leaving
-          console.log(`Room owner ${socketUser.username} is leaving room ${roomId}`);
-          
-          // First notify all users that the room is closing
-          io.to(roomId).emit("roomClosed");
-          
-          // Get all connected sockets in the room
-          const connectedSockets = await io.in(roomId).allSockets();
-          console.log(`Found ${connectedSockets.size} connected sockets in room ${roomId}`);
-          
-          // Remove all users from the room
-          for (const socketId of connectedSockets) {
-            const clientSocket = io.sockets.sockets.get(socketId);
-            if (clientSocket) {
-              console.log(`Removing socket ${socketId} from room ${roomId}`);
-              clientSocket.leave(roomId);
-              // Don't emit roomClosed again to avoid duplicate messages
-            }
-          }
-        } else {
-          // Regular user is leaving
-          console.log(`Regular user ${socketUser.username} is leaving room ${roomId}`);
-          socket.leave(roomId);
-          const updatedMembers = await Room.getRoomUsers(Number(roomId));
-          if (updatedMembers.length > 0) {
-            io.to(roomId).emit("roomMembersUpdate", {
-              members: updatedMembers,
-              roomOwner,
-              currentPlayers: updatedMembers.length
-            });
+          if (game) {
+            // Delete the game state
+            await db.none(
+              `DELETE FROM "gameState" WHERE game_id = $1`,
+              [game.id]
+            );
+            // Delete the game
+            await db.none(
+              `DELETE FROM games WHERE id = $1`,
+              [game.id]
+            );
+            // Reset room status to waiting
+            await db.none(
+              `UPDATE rooms SET status = 'waiting' WHERE id = $1`,
+              [roomId]
+            );
           }
         }
 
-        // Update lobby with new room list
-        const rooms = await Room.getAllRooms();
-        io.emit("roomListUpdate", rooms);
+        // Notify other users in the room
+        socket.to(`room:${roomId}`).emit("roomUpdate", {
+          type: "playerLeft",
+          userId,
+          currentPlayers: result.result.current_players
+        });
+
+        // Notify the user who left
+        socket.emit("leftRoom", {
+          roomId,
+          currentPlayers: result.result.current_players
+        });
+
       } catch (error) {
-        console.error(`Error handling room ${roomId} leave:`, error);
+        console.error(`[Socket] Error leaving room:`, error);
+        socket.emit("error", {
+          message: "Failed to leave room",
+          context: error instanceof Error ? error.message : "Unknown error"
+        });
       }
     });
 
@@ -271,22 +295,71 @@ export function setupSocket(server: HttpServer) {
     });
 
     socket.on("startGame", async ({ roomId }) => {
+      console.log(`[Socket] Attempting to start game for room ${roomId}`);
       try {
-        const members = await Room.getRoomUsers(Number(roomId));
+        // First check if the room exists and has enough players
         const roomOwner = await Room.getRoomOwner(Number(roomId));
+        console.log(`[Socket] Room owner:`, roomOwner);
+        
+        if (!roomOwner) {
+          console.error(`[Socket] Room ${roomId} not found`);
+          socket.emit("error", { message: "Room not found" });
+          return;
+        }
 
-        if (roomOwner && roomOwner.socket_id === socket.id) {
-          const readyPlayers = members.filter((member) => member.ready);
-          if (readyPlayers.length >= 2) {
-            io.to(roomId).emit("gameStarting", { readyPlayers });
-          } else {
-            socket.emit("error", {
-              message: "Need at least 2 ready players to start",
-            });
+        const members = await Room.getRoomUsers(Number(roomId));
+        console.log(`[Socket] Room members:`, members);
+        
+        if (members.length < 2) {
+          console.error(`[Socket] Not enough players in room ${roomId}`);
+          socket.emit("error", { message: "Need at least 2 players to start" });
+          return;
+        }
+
+        // Reset room status to waiting if it's in playing state
+        const roomInfo = await db.oneOrNone(
+          `SELECT status FROM rooms WHERE id = $1`,
+          [roomId]
+        );
+        console.log(`[Socket] Current room status:`, roomInfo);
+
+        if (roomInfo && roomInfo.status === 'playing') {
+          console.log(`[Socket] Resetting room ${roomId} from playing to waiting state`);
+          await db.none(
+            `UPDATE rooms SET status = 'waiting' WHERE id = $1`,
+            [roomId]
+          );
+        }
+
+        const result = await Room.start(Number(roomId));
+        console.log(`[Socket] Game start result:`, result);
+        
+        if (result && result.id) {
+          // Verify the game state was created
+          const gameState = await db.oneOrNone(
+            `SELECT * FROM "gameState" WHERE game_id = $1`,
+            [result.id]
+          );
+          console.log(`[Socket] Created game state:`, gameState);
+          
+          if (!gameState) {
+            console.error(`[Socket] Game state not created for game ${result.id}`);
+            socket.emit("error", { message: "Failed to create game state" });
+            return;
           }
+
+          console.log(`[Socket] Emitting gameStarting event for room ${roomId}`);
+          io.to(roomId).emit("gameStarting", { gameId: result.id });
+        } else {
+          console.error(`[Socket] Failed to start game for room ${roomId}`);
+          socket.emit("error", { message: "Failed to start game" });
         }
       } catch (error) {
-        handleError(error, `starting game in room ${roomId}`);
+        console.error(`[Socket] Error starting game for room ${roomId}:`, error);
+        socket.emit("error", { 
+          message: error instanceof Error ? error.message : "Error starting game",
+          context: "startGame"
+        });
       }
     });
 
