@@ -1,42 +1,103 @@
-import { gameState } from "../state/gameState.js";
+import { gameState, isMyTurn, getCurrentPlayer, getPlayerById } from "../state/gameState.js";
 import { createCardElement, canPlayCard } from "../utils/cardUtils.js";
 
 // Update the entire game UI based on current game state
 export const updateGameUI = () => {
-  console.log("Updating Game UI. My turn:", gameState.myTurn);
-  updateCurrentPlayer();
-  updateDirection();
-  updateOtherPlayers();
-  updateDiscardPile();
-  updateMyHand();
-  updateGameControls();
+  console.log("[Game UI] Updating game UI");
+  try {
+    updateTopCard();
+    updateCurrentPlayer();
+    updatePlayerHands();
+    updateGameStatus();
+    console.log("[Game UI] Game UI updated successfully");
+  } catch (error) {
+    console.error("[Game UI] Error updating game UI:", error);
+  }
+};
+
+const updateTopCard = () => {
+  console.log("[Game UI] Updating top card:", gameState.topCard);
+  const topCardElement = document.querySelector(".top-card");
+  if (!topCardElement) {
+    console.error("[Game UI] Top card element not found");
+    return;
+  }
+
+  if (gameState.topCard) {
+    topCardElement.innerHTML = `
+      <div class="card ${gameState.topCard.color}">
+        <span class="card-value">${gameState.topCard.value}</span>
+      </div>
+    `;
+  } else {
+    topCardElement.innerHTML = '<div class="card-placeholder">No card played yet</div>';
+  }
 };
 
 // Update the current player display
 const updateCurrentPlayer = () => {
-  const currentPlayerElement = document.getElementById("current-player");
-  const currentPlayerObj = gameState.players.find(
-    (p) => p.id === gameState.currentPlayer
-  );
+  console.log("[Game UI] Updating current player display");
+  const currentPlayer = getCurrentPlayer();
+  const currentPlayerElement = document.querySelector(".current-player");
+  
+  if (!currentPlayerElement) {
+    console.error("[Game UI] Current player element not found");
+    return;
+  }
 
-  if (currentPlayerElement && currentPlayerObj) {
-    currentPlayerElement.textContent =
-      currentPlayerObj.id === gameState.myId
-        ? `${currentPlayerObj.username} (You)`
-        : currentPlayerObj.username;
-  } else if (currentPlayerElement) {
-    currentPlayerElement.textContent = "Unknown";
+  if (currentPlayer) {
+    const player = getPlayerById(currentPlayer);
+    currentPlayerElement.textContent = `Current Player: ${player ? player.username : 'Unknown'}`;
+    currentPlayerElement.classList.toggle("my-turn", isMyTurn());
+  } else {
+    currentPlayerElement.textContent = "Waiting for game to start...";
+    currentPlayerElement.classList.remove("my-turn");
   }
 };
 
-// Update the game direction indicator
-const updateDirection = () => {
-  const directionIndicatorElement = document.getElementById(
-    "direction-indicator"
-  );
-  if (directionIndicatorElement) {
-    directionIndicatorElement.textContent =
-      gameState.direction === 1 ? "→ Clockwise" : "← Counter-Clockwise";
+const updatePlayerHands = () => {
+  console.log("[Game UI] Updating player hands");
+  const playersContainer = document.querySelector(".players-container");
+  if (!playersContainer) {
+    console.error("[Game UI] Players container not found");
+    return;
+  }
+
+  playersContainer.innerHTML = gameState.players
+    .filter(player => player.id !== gameState.myId)
+    .map(player => `
+      <div class="player-hand ${player.id === gameState.currentPlayer ? 'current-player' : ''}">
+        <div class="player-info">
+          <span class="player-name">${player.username}</span>
+          <span class="card-count">${player.hand ? player.hand.length : 0} cards</span>
+        </div>
+        <div class="player-cards">
+          ${Array(player.hand ? player.hand.length : 0).fill('<div class="card back"></div>').join('')}
+        </div>
+      </div>
+    `).join('');
+};
+
+const updateGameStatus = () => {
+  console.log("[Game UI] Updating game status");
+  const statusElement = document.querySelector(".game-status");
+  if (!statusElement) {
+    console.error("[Game UI] Game status element not found");
+    return;
+  }
+
+  switch (gameState.status) {
+    case "waiting":
+      statusElement.textContent = "Waiting for players...";
+      break;
+    case "playing":
+      statusElement.textContent = isMyTurn() ? "Your turn!" : "Waiting for other players...";
+      break;
+    case "finished":
+      statusElement.textContent = "Game Over!";
+      break;
+    default:
+      statusElement.textContent = "Unknown game status";
   }
 };
 
@@ -107,6 +168,7 @@ export const updateDiscardPile = () => {
 
 // Update the player's hand display
 export const updateMyHand = () => {
+  console.log("[Game UI] Updating my hand UI");
   const myHandElement = document.getElementById("my-hand");
   if (!myHandElement) return;
 

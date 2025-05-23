@@ -16,6 +16,7 @@ import {
   GET_ROOM_OWNER_SQL,
   GET_ROOM_MAX_PLAYERS_SQL,
   UPDATE_SOCKET_ID_SQL,
+  RESET_ROOM_SQL,
 } from "./sql";
 
 interface roomState {
@@ -188,7 +189,69 @@ const delete_room = async (userId: number, roomId: number) => {
 };
 
 const start = async (roomId: number) => {
-  return await db.one(START_room_SQL, [roomId]);
+  // Log the room status and player count before attempting to start
+  const roomInfo = await db.oneOrNone(
+    `SELECT id, status, current_players FROM rooms WHERE id = $1`,
+    [roomId]
+  );
+  console.log('[Room.start] Room info before start:', roomInfo);
+
+  if (!roomInfo) {
+    throw new Error('Room not found');
+  }
+
+  if (roomInfo.status !== 'waiting') {
+    throw new Error('Room is not in waiting status');
+  }
+
+  if (roomInfo.current_players < 2) {
+    throw new Error('Not enough players to start the game');
+  }
+
+  // Start the game and get the game ID
+  const result = await db.oneOrNone(START_room_SQL, [roomId]);
+  if (!result) {
+    throw new Error('Failed to start game');
+  }
+
+  console.log('[Room.start] Game started with result:', result);
+
+  // Get the first player to be the current player
+  const firstPlayer = await db.oneOrNone(
+    `SELECT user_id FROM room_users WHERE room_id = $1 ORDER BY id ASC LIMIT 1`,
+    [roomId]
+  );
+
+  if (!firstPlayer) {
+    throw new Error('No players found in room');
+  }
+
+  console.log('[Room.start] First player:', firstPlayer);
+
+  // Initialize the game state
+  try {
+    const gameState = await db.one(
+      `INSERT INTO "gameState" (
+        game_id,
+        status,
+        current_player_id,
+        direction,
+        current_color,
+        discard_pile_count,
+        draw_pile_count,
+        last_action_time
+      ) VALUES ($1, 'playing', $2, 'clockwise', 'red', 0, 0, NOW())
+      RETURNING *`,
+      [result.id, firstPlayer.user_id]
+    );
+    console.log('[Room.start] Game state initialized:', gameState);
+    return result;
+  } catch (error) {
+    console.error('[Room.start] Error creating game state:', error);
+    // If game state creation fails, we should clean up the game
+    await db.none('DELETE FROM games WHERE id = $1', [result.id]);
+    throw new Error('Failed to create game state');
+  }
 };
 
 const getroomState = async (roomId: number): Promise<roomState | null> => {
@@ -243,6 +306,86 @@ const updateSocketId = async (
   return await db.oneOrNone(UPDATE_SOCKET_ID_SQL, [socketId, roomId, userId]);
 };
 
+export const startGame = async (roomId: number) => {
+  try {
+    // First check the current room state
+    const roomState = await db.oneOrNone(
+      `SELECT id, status, current_players FROM rooms WHERE id = $1`,
+      [roomId]
+    );
+    console.log("Current room state:", roomState);
+
+    if (!roomState) {
+      throw new Error(`Room ${roomId} does not exist`);
+    }
+
+    // If room is already in playing state, reset it first
+    if (roomState.status === 'playing') {
+      console.log("Room is already in playing state, resetting to waiting...");
+      const resetResult = await db.one(RESET_ROOM_SQL, [roomId]);
+      console.log("Room reset result:", resetResult);
+    } else if (roomState.status !== 'waiting') {
+      throw new Error(`Cannot start game: Room is in ${roomState.status} state`);
+    }
+
+    if (roomState.current_players < 2) {
+      throw new Error(`Cannot start game: Need at least 2 players (current: ${roomState.current_players})`);
+    }
+
+    // Start the game and get the game ID
+    const gameResult = await db.one(START_room_SQL, [roomId]);
+    console.log("Game started with result:", gameResult);
+
+    if (!gameResult.id) {
+      throw new Error(`Failed to start game: Room ${roomId} is not in waiting state or doesn't exist`);
+    }
+
+    // Get the first player to be the current player
+    const firstPlayer = await db.one(
+      `SELECT user_id FROM room_users WHERE room_id = $1 ORDER BY id ASC LIMIT 1`,
+      [roomId]
+    );
+    console.log("First player:", firstPlayer);
+
+    // Initialize the game state
+    const gameState = await db.one(
+      `INSERT INTO "gameState" (
+        game_id,
+        status,
+        current_player_id,
+        direction,
+        current_color
+      ) VALUES ($1, 'playing', $2, 'clockwise', 'red')
+      RETURNING *`,
+      [gameResult.id, firstPlayer.user_id]
+    );
+    console.log("Game state initialized:", gameState);
+
+    // Get all players in the room
+    const players = await getRoomUsers(roomId);
+    console.log("Room players:", players);
+
+    return {
+      gameId: gameResult.id,
+      players,
+      currentPlayer: firstPlayer.user_id,
+      direction: 'clockwise',
+      currentColor: 'red'
+    };
+  } catch (error) {
+    console.error(`Error starting game in room ${roomId}:`, error);
+    // Type check the error object
+    if (error && typeof error === 'object') {
+      if ('code' in error && error.code === '42P01') {
+        console.error("Table 'gameState' does not exist. Please run migrations.");
+      } else if ('message' in error) {
+        console.error("Error message:", error.message);
+      }
+    }
+    return null;
+  }
+};
+
 export default {
   joinRoom,
   getPlayers,
@@ -258,4 +401,5 @@ export default {
   getAllRooms,
   getRoomMaxPlayers,
   updateSocketId,
+  startGame,
 };

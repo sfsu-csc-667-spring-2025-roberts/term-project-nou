@@ -4,6 +4,8 @@ import { setupChatEvents } from "./game/ui/chatUI.js";
 import { handleLeaveRoom } from "./game/actions/roomActions.js";
 
 document.addEventListener("DOMContentLoaded", () => {
+  console.log("[Game Board] Initializing game board...");
+  
   const gameContainer = document.querySelector(".game-container");
   const otherPlayersContainer = document.getElementById(
     "other-players-container"
@@ -25,39 +27,45 @@ document.addEventListener("DOMContentLoaded", () => {
   const leaveRoomButton = document.getElementById("leave-room");
 
   if (!gameContainer) {
-    console.error("CRITICAL: '.game-container' element not found in the DOM!");
+    console.error("[Game Board] CRITICAL: '.game-container' element not found in the DOM!");
     alert("Error: Could not initialize the game board UI.");
     return;
   }
 
-  const gameId = gameContainer.dataset.gameId;
+  // Get game ID from URL or session storage
+  const gameId = gameContainer.dataset.gameId || sessionStorage.getItem('currentGameId');
+  console.log(`[Game Board] Game ID from container:`, gameContainer.dataset.gameId);
+  console.log(`[Game Board] Game ID from session storage:`, sessionStorage.getItem('currentGameId'));
 
   if (!gameId) {
-    console.error("CRITICAL: Game ID not found in the game container!");
+    console.error("[Game Board] CRITICAL: Game ID not found!");
     alert("Error: Could not identify the game. Redirecting...");
     window.location.href = "/lobby";
     return;
   }
 
   console.log(
-    `%cInitializing Game Board with ID: ${gameId}`,
+    `[Game Board] Initializing Game Board with ID: ${gameId}`,
     "color: green; font-weight: bold;"
   );
 
   let username = localStorage.getItem("username");
+  console.log(`[Game Board] Username from localStorage:`, username);
 
   if (typeof io === "undefined") {
-    console.error("Socket.IO library not loaded!");
+    console.error("[Game Board] Socket.IO library not loaded!");
     alert("Error: Connection library missing. Please refresh.");
     return;
   }
 
   const socket = io();
+  console.log("[Game Board] Socket.IO instance created");
+  
   setupSocketEvents(socket, gameId, username);
   setupChatEvents(socket, gameId);
 
   function updateGameState(data) {
-    console.log("Updating game state with data:", data);
+    console.log("[Game Board] Updating game state with data:", data);
     gameState.players = data.players || gameState.players;
     gameState.currentPlayer = data.currentPlayer;
     gameState.direction = data.direction;
@@ -66,7 +74,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const me = gameState.players.find((p) => p.id === gameState.myId);
     if (me && me.hand) {
-      console.log("Updating my hand from full game state update.");
+      console.log("[Game Board] Updating my hand from full game state update.");
       gameState.myHand = me.hand;
     }
 
@@ -568,9 +576,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Initial game state fetch
   fetch(`/games/${gameId}/state`)
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      return response.json();
+    })
     .then((data) => {
       console.log("Initial game state:", data);
+      if (!data || !data.gameId) {
+        throw new Error("Invalid game state received");
+      }
       updateGameState(data);
     })
     .catch((error) => {
