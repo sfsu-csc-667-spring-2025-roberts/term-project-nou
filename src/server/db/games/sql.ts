@@ -6,7 +6,7 @@ WITH updated_game AS (
   WHERE id = $1 AND status = 'waiting'
   RETURNING id
 ),
-game_state AS (
+gameState AS (
   INSERT INTO gameState (
     game_id,
     status,
@@ -28,7 +28,7 @@ SELECT
   gs.game_id as state_id,
   (SELECT initialize_game_cards(ug.id, 7)) as cards_initialized
 FROM updated_game ug
-JOIN game_state gs ON ug.id = gs.game_id;
+JOIN gameState gs ON ug.id = gs.game_id;
 `;
 
 export const GET_GAME_STATE_SQL = `

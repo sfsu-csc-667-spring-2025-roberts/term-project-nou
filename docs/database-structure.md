@@ -248,7 +248,7 @@ erDiagram
 
 4. **JSON Fields**
 
-   - state (in game_state)
+   - state (in gameState)
    - cards (in player_hand)
 
 5. **Enumerated Values**

@@ -63,7 +63,7 @@
 - `updated_at` (TIMESTAMP NOT NULL DEFAULT NOW())
 - UNIQUE(game_id, user_id)
 
-### gameCards
+### game_cards
 - `id` (SERIAL PRIMARY KEY)
 - `game_id` (INTEGER NOT NULL REFERENCES games(id) ON DELETE CASCADE)
 - `card_type` (VARCHAR NOT NULL)
@@ -117,10 +117,10 @@
 - `idx_game_players_game_id` ON "gamePlayers"(game_id)
 - `idx_game_players_user_id` ON "gamePlayers"(user_id)
 
-### gameCards
-- `idx_game_cards_game_id` ON "gameCards"(game_id)
-- `idx_game_cards_player_id` ON "gameCards"(player_id)
-- `idx_game_cards_location` ON "gameCards"(location)
+### game_cards
+- `idx_game_cards_game_id` ON "game_cards"(game_id)
+- `idx_game_cards_player_id` ON "game_cards"(player_id)
+- `idx_game_cards_location` ON "game_cards"(location)
 
 ### gameState
 - `idx_game_state_game_id` ON "gameState"(game_id)
@@ -172,5 +172,5 @@
 - Unique constraints prevent duplicate entries in many-to-many relationships
 - Indexes are created on frequently queried columns and foreign keys
 - The `gameState` table tracks the current state of an active game
-- The `gameCards` table manages the distribution and location of cards in a game
+- The `game_cards` table manages the distribution and location of cards in a game
 - The `gamePlayers` table tracks player participation and their hand cards 

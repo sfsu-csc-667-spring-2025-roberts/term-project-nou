@@ -159,7 +159,7 @@ router.get(
                 'position', gc.position
               ) ORDER BY gc.position
             ) as hand
-          FROM "gameCards" gc
+          FROM "game_cards" gc
           WHERE gc.game_id = $1 AND gc.location = 'hand'
           GROUP BY gc.game_id, gc.player_id
         ),
@@ -172,7 +172,7 @@ router.get(
               'color', gc.card_color,
               'value', gc.card_value
             ) as top_card
-          FROM "gameCards" gc
+          FROM "game_cards" gc
           WHERE gc.game_id = $1 AND gc.location = 'discard'
           ORDER BY gc.position DESC
           LIMIT 1
@@ -189,7 +189,7 @@ router.get(
                 'value', gc.card_value
               ) ORDER BY gc.position
             ) as cards
-          FROM "gameCards" gc
+          FROM "game_cards" gc
           WHERE gc.game_id = $1 AND gc.location = 'deck'
           GROUP BY gc.game_id
         ),
@@ -353,7 +353,7 @@ router.post(
 
         // Delete game cards
         await db.none(
-          `DELETE FROM "gameCards" WHERE game_id = $1`,
+          `DELETE FROM "game_cards" WHERE game_id = $1`,
           [gameId]
         );
 

@@ -13,7 +13,13 @@ export const up = (pgm: MigrationBuilder) => {
     draw_pile_count: { type: 'integer', notNull: true, default: 0 },
     last_action_time: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') },
     created_at: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') },
-    updated_at: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') }
+    updated_at: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') },
+    status: {
+      type: 'varchar(20)',
+      notNull: true,
+      default: 'waiting',
+      comment: 'Game status: waiting, playing, finished',
+    },
   });
 
   // Create game_cards table
@@ -53,9 +59,13 @@ export const up = (pgm: MigrationBuilder) => {
       v_card_id integer;
       v_player_id integer;
       v_position integer;
+      v_color text;
+      v_value integer;
+      v_action text;
+      v_wild text;
     BEGIN
       -- Add number cards (0-9)
-      FOR v_color IN SELECT unnest(ARRAY['red', 'blue', 'green', 'yellow']) LOOP
+      FOREACH v_color IN ARRAY ARRAY['red', 'blue', 'green', 'yellow'] LOOP
         FOR v_value IN 0..9 LOOP
           -- Add two of each number card (except 0)
           FOR i IN 1..2 LOOP
@@ -68,8 +78,8 @@ export const up = (pgm: MigrationBuilder) => {
       END LOOP;
 
       -- Add action cards (skip, reverse, draw2)
-      FOR v_color IN SELECT unnest(ARRAY['red', 'blue', 'green', 'yellow']) LOOP
-        FOR v_action IN SELECT unnest(ARRAY['skip', 'reverse', 'draw2']) LOOP
+      FOREACH v_color IN ARRAY ARRAY['red', 'blue', 'green', 'yellow'] LOOP
+        FOREACH v_action IN ARRAY ARRAY['skip', 'reverse', 'draw2'] LOOP
           -- Add two of each action card
           FOR i IN 1..2 LOOP
             INSERT INTO game_cards (game_id, card_type, card_color, card_value, location)
@@ -79,7 +89,7 @@ export const up = (pgm: MigrationBuilder) => {
       END LOOP;
 
       -- Add wild cards (wild, wild4)
-      FOR v_wild IN SELECT unnest(ARRAY['wild', 'wild4']) LOOP
+      FOREACH v_wild IN ARRAY ARRAY['wild', 'wild4'] LOOP
         -- Add four of each wild card
         FOR i IN 1..4 LOOP
           INSERT INTO game_cards (game_id, card_type, card_color, card_value, location)

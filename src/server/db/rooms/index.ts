@@ -400,32 +400,32 @@ export const startGame = async (roomId: number) => {
          SELECT 
            'skip' as card_type,
            c.card_color,
-           NULL as card_value
+           'skip' as card_value
          FROM colors c
          UNION ALL
          SELECT 
            'reverse' as card_type,
            c.card_color,
-           NULL as card_value
+           'reverse' as card_value
          FROM colors c
          UNION ALL
          SELECT 
            'draw2' as card_type,
            c.card_color,
-           NULL as card_value
+           'draw2' as card_value
          FROM colors c
        ),
        wild_cards AS (
          SELECT 
            'wild' as card_type,
            'black' as card_color,
-           NULL as card_value
+           'wild' as card_value
          FROM generate_series(1, 4)
          UNION ALL
          SELECT 
            'wild_draw4' as card_type,
            'black' as card_color,
-           NULL as card_value
+           'wild_draw4' as card_value
          FROM generate_series(1, 4)
        ),
        all_cards AS (
@@ -434,7 +434,7 @@ export const startGame = async (roomId: number) => {
          SELECT * FROM wild_cards
        ),
        inserted_cards AS (
-         INSERT INTO "gameCards" (game_id, card_type, card_color, card_value, location, position)
+         INSERT INTO "game_cards" (game_id, card_type, card_color, card_value, location, position)
          SELECT 
            $1 as game_id,
            card_type,
@@ -458,7 +458,7 @@ export const startGame = async (roomId: number) => {
           SELECT id, ROW_NUMBER() OVER (ORDER BY RANDOM()) as pos
           FROM (
             SELECT id
-            FROM "gameCards"
+            FROM "game_cards"
             WHERE game_id = $1
             AND location = 'deck'
             ORDER BY RANDOM()
@@ -466,7 +466,7 @@ export const startGame = async (roomId: number) => {
           ) selected_cards
         ),
         updated_cards AS (
-          UPDATE "gameCards" gc
+          UPDATE "game_cards" gc
           SET location = 'hand',
               player_id = $2,
               position = rc.pos
@@ -484,14 +484,14 @@ export const startGame = async (roomId: number) => {
     const discardResult = await db.one(
       `WITH first_card AS (
         SELECT id, card_type, card_color, card_value
-        FROM "gameCards"
+        FROM "game_cards"
         WHERE game_id = $1
         AND location = 'deck'
         ORDER BY RANDOM()
         LIMIT 1
       ),
       updated_card AS (
-        UPDATE "gameCards" gc
+        UPDATE "game_cards" gc
         SET location = 'discard',
             position = 1
         WHERE gc.id IN (SELECT id FROM first_card)
@@ -516,7 +516,7 @@ export const startGame = async (roomId: number) => {
          discard_pile_count = 1,
          draw_pile_count = (
            SELECT COUNT(*) 
-           FROM "gameCards" 
+           FROM "game_cards" 
            WHERE game_id = $1 AND location = 'deck'
          ),
          current_color = $2,
@@ -532,7 +532,7 @@ export const startGame = async (roomId: number) => {
         COUNT(*) FILTER (WHERE location = 'deck') as deck_count,
         COUNT(*) FILTER (WHERE location = 'hand') as hand_count,
         COUNT(*) FILTER (WHERE location = 'discard') as discard_count
-       FROM "gameCards"
+       FROM "game_cards"
        WHERE game_id = $1`,
       [gameResult.id]
     );
@@ -557,7 +557,7 @@ export const startGame = async (roomId: number) => {
          ) as hand
        FROM room_users ru
        JOIN users u ON ru.user_id = u.id
-       LEFT JOIN "gameCards" gc ON gc.game_id = $1 AND gc.location = 'hand' AND gc.player_id = u.id
+       LEFT JOIN "game_cards" gc ON gc.game_id = $1 AND gc.location = 'hand' AND gc.player_id = u.id
        WHERE ru.room_id = $2
        GROUP BY u.id, u.username, u.email, u.socket_id, ru.room_id, ru.joined_at
        ORDER BY ru.joined_at ASC`,
@@ -572,7 +572,7 @@ export const startGame = async (roomId: number) => {
          card_type,
          card_color as color,
          card_value as value
-       FROM "gameCards"
+       FROM "game_cards"
        WHERE game_id = $1
        AND location = 'discard'
        ORDER BY position DESC
@@ -714,32 +714,32 @@ export const Room = {
            SELECT 
              'skip' as card_type,
              c.card_color,
-             NULL as card_value
+             'skip' as card_value
            FROM colors c
            UNION ALL
            SELECT 
              'reverse' as card_type,
              c.card_color,
-             NULL as card_value
+             'reverse' as card_value
            FROM colors c
            UNION ALL
            SELECT 
              'draw2' as card_type,
              c.card_color,
-             NULL as card_value
+             'draw2' as card_value
            FROM colors c
          ),
          wild_cards AS (
            SELECT 
              'wild' as card_type,
              'black' as card_color,
-             NULL as card_value
+             'wild' as card_value
            FROM generate_series(1, 4)
            UNION ALL
            SELECT 
              'wild_draw4' as card_type,
              'black' as card_color,
-             NULL as card_value
+             'wild_draw4' as card_value
            FROM generate_series(1, 4)
          ),
          all_cards AS (
@@ -748,7 +748,7 @@ export const Room = {
            SELECT * FROM wild_cards
          ),
          inserted_cards AS (
-           INSERT INTO "gameCards" (game_id, card_type, card_color, card_value, location, position)
+           INSERT INTO "game_cards" (game_id, card_type, card_color, card_value, location, position)
            SELECT 
              $1 as game_id,
              card_type,
@@ -772,7 +772,7 @@ export const Room = {
             SELECT id, ROW_NUMBER() OVER (ORDER BY RANDOM()) as pos
             FROM (
               SELECT id
-              FROM "gameCards"
+              FROM "game_cards"
               WHERE game_id = $1
               AND location = 'deck'
               ORDER BY RANDOM()
@@ -780,7 +780,7 @@ export const Room = {
             ) selected_cards
           ),
           updated_cards AS (
-            UPDATE "gameCards" gc
+            UPDATE "game_cards" gc
             SET location = 'hand',
                 player_id = $2,
                 position = rc.pos
@@ -798,14 +798,14 @@ export const Room = {
       const discardResult = await db.one(
         `WITH first_card AS (
           SELECT id, card_type, card_color, card_value
-          FROM "gameCards"
+          FROM "game_cards"
           WHERE game_id = $1
           AND location = 'deck'
           ORDER BY RANDOM()
           LIMIT 1
         ),
         updated_card AS (
-          UPDATE "gameCards" gc
+          UPDATE "game_cards" gc
           SET location = 'discard',
               position = 1
           WHERE gc.id IN (SELECT id FROM first_card)
@@ -830,7 +830,7 @@ export const Room = {
            discard_pile_count = 1,
            draw_pile_count = (
              SELECT COUNT(*) 
-             FROM "gameCards" 
+             FROM "game_cards" 
              WHERE game_id = $1 AND location = 'deck'
            ),
            current_color = $2,
@@ -846,7 +846,7 @@ export const Room = {
           COUNT(*) FILTER (WHERE location = 'deck') as deck_count,
           COUNT(*) FILTER (WHERE location = 'hand') as hand_count,
           COUNT(*) FILTER (WHERE location = 'discard') as discard_count
-         FROM "gameCards"
+         FROM "game_cards"
          WHERE game_id = $1`,
         [gameResult.id]
       );
@@ -871,7 +871,7 @@ export const Room = {
            ) as hand
          FROM room_users ru
          JOIN users u ON ru.user_id = u.id
-         LEFT JOIN "gameCards" gc ON gc.game_id = $1 AND gc.location = 'hand' AND gc.player_id = u.id
+         LEFT JOIN "game_cards" gc ON gc.game_id = $1 AND gc.location = 'hand' AND gc.player_id = u.id
          WHERE ru.room_id = $2
          GROUP BY u.id, u.username, u.email, u.socket_id, ru.room_id, ru.joined_at
          ORDER BY ru.joined_at ASC`,
@@ -886,7 +886,7 @@ export const Room = {
            card_type,
            card_color as color,
            card_value as value
-         FROM "gameCards"
+         FROM "game_cards"
          WHERE game_id = $1
          AND location = 'discard'
          ORDER BY position DESC
