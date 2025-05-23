@@ -300,10 +300,10 @@ document.addEventListener("DOMContentLoaded", () => {
     readyManager.updatePlayerReady(userId, ready);
   });
 
-  socket.on("gameStarting", (data) => {
-    console.log("Game starting event received:", data);
+  socket.on("gameStarted", (data) => {
+    console.log("Game started event received:", data);
     if (!data.gameId) {
-      console.error("No game ID in gameStarting event:", data);
+      console.error("No game ID in gameStarted event:", data);
       return;
     }
     // Store game ID in session storage for the game board
@@ -314,6 +314,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   socket.on("roomUpdate", (data) => {
     console.log("Room update received:", data);
+    if (data.type === "statusChange") {
+      console.log("Room status changed to:", data.status);
+      // If the room is reset to waiting, we should stay on this page
+      if (data.status === "waiting") {
+        return;
+      }
+    }
     // Only redirect if we have both a game ID and the room is in playing state
     if (data.status === "playing" && data.gameId) {
       console.log("Room is now playing, redirecting to game:", data.gameId);
@@ -321,6 +328,18 @@ document.addEventListener("DOMContentLoaded", () => {
       sessionStorage.setItem('currentGameId', data.gameId);
       // Redirect to game page
       window.location.href = `/games/${data.gameId}`;
+    }
+  });
+
+  socket.on("roomError", (error) => {
+    console.error("Room error received:", error);
+    // Only redirect to lobby if explicitly requested
+    if (error.redirect === "/lobby") {
+      console.log("Redirecting to lobby due to error:", error.message);
+      window.location.href = "/lobby";
+    } else {
+      // Just show the error message
+      alert(error.message || "An error occurred");
     }
   });
 

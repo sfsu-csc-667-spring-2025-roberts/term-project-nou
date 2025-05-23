@@ -184,12 +184,10 @@ document.addEventListener("DOMContentLoaded", () => {
       cardDiv.classList.toggle("disabled", !isPlayable);
 
       if (isPlayable) {
-        cardDiv.replaceWith(cardDiv.cloneNode(true));
-        myHandElement.appendChild(cardDiv);
         cardDiv.addEventListener("click", () => handleCardClick(card));
-      } else {
-        myHandElement.appendChild(cardDiv);
       }
+
+      myHandElement.appendChild(cardDiv);
     });
 
     fanOutCards(myHandElement);
@@ -255,86 +253,76 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function createCardElement(card) {
     const cardDiv = document.createElement("div");
-    const displayColor =
-      (card.type === "wild" || card.type === "wild_draw_four") &&
-      card.declaredColor
-        ? card.declaredColor
-        : card.color;
-    cardDiv.className = `uno-card ${displayColor}`;
-    cardDiv.dataset.type = card.type;
-    if (card.type === "number") cardDiv.dataset.value = card.value;
+    cardDiv.className = "uno-card";
+    cardDiv.dataset.cardId = card.id;
+    cardDiv.dataset.cardType = card.type;
+    cardDiv.dataset.cardColor = card.color;
+    cardDiv.dataset.cardValue = card.value;
 
-    const innerDiv = document.createElement("div");
-    innerDiv.className = "card-inner";
-    const topLeftCorner = document.createElement("div");
-    topLeftCorner.className = "card-corner top-left";
-    const bottomRightCorner = document.createElement("div");
-    bottomRightCorner.className = "card-corner bottom-right";
-    const centerDiv = document.createElement("div");
-    centerDiv.className = "card-center";
-
-    let symbol = "";
-    let centerContent = "";
-    switch (card.type) {
-      case "number":
-        symbol = card.value;
-        centerContent = card.value;
-        break;
-      case "skip":
-        symbol = "⊘";
-        centerContent = '<span class="symbol">⊘</span>';
-        break;
-      case "reverse":
-        symbol = "⟲";
-        centerContent = '<span class="symbol">⟲</span>';
-        break;
-      case "draw_two":
-        symbol = "+2";
-        centerContent = '<span class="symbol">+2</span>';
-        break;
-      case "wild":
-        symbol = "";
-        centerContent =
-          '<div class="wild-colors"><div class="wild-red"></div><div class="wild-blue"></div><div class="wild-yellow"></div><div class="wild-green"></div></div><span class="symbol wild">Wild</span>';
-        break;
-      case "wild_draw_four":
-        symbol = "+4";
-        centerContent =
-          '<div class="wild-colors"><div class="wild-red"></div><div class="wild-blue"></div><div class="wild-yellow"></div><div class="wild-green"></div></div><span class="symbol wild four">+4</span>';
-        break;
-      default:
-        symbol = "?";
-        centerContent = "?";
+    // Add color class
+    if (card.color !== "black") {
+      cardDiv.classList.add(card.color);
     }
-    topLeftCorner.innerHTML = symbol;
-    bottomRightCorner.innerHTML = symbol;
-    centerDiv.innerHTML = centerContent;
-    innerDiv.appendChild(topLeftCorner);
-    innerDiv.appendChild(centerDiv);
-    innerDiv.appendChild(bottomRightCorner);
-    cardDiv.appendChild(innerDiv);
+
+    // Add type class
+    cardDiv.classList.add(card.type);
+
+    // Add value class
+    if (card.value) {
+      cardDiv.classList.add(`value-${card.value}`);
+    }
+
+    // Create card content
+    const cardContent = document.createElement("div");
+    cardContent.className = "card-content";
+
+    // Add card value
+    const valueDiv = document.createElement("div");
+    valueDiv.className = "card-value";
+    valueDiv.textContent = card.value || card.type;
+    cardContent.appendChild(valueDiv);
+
+    // Add card type icon if it's an action card
+    if (card.type !== "number") {
+      const iconDiv = document.createElement("div");
+      iconDiv.className = "card-icon";
+      iconDiv.textContent = getCardIcon(card.type);
+      cardContent.appendChild(iconDiv);
+    }
+
+    cardDiv.appendChild(cardContent);
     return cardDiv;
   }
 
+  function getCardIcon(type) {
+    switch (type) {
+      case "skip":
+        return "⏭️";
+      case "reverse":
+        return "↩️";
+      case "draw2":
+        return "+2";
+      case "wild":
+        return "🎨";
+      case "wild_draw4":
+        return "+4";
+      default:
+        return "";
+    }
+  }
+
   function canPlayCard(card) {
-    const topCard = gameState.topCard;
-    if (!topCard) return true;
+    if (!gameState.topCard) return true;
 
-    const topColor =
-      (topCard.type === "wild" || topCard.type === "wild_draw_four") &&
-      topCard.declaredColor
-        ? topCard.declaredColor
-        : topCard.color;
+    // Wild cards can always be played
+    if (card.type === "wild" || card.type === "wild_draw4") {
+      return true;
+    }
 
-    if (card.type === "wild" || card.type === "wild_draw_four") return true;
-    if (card.color === "black") return false;
-
+    // Check if card matches top card's color or value
     return (
-      card.color === topColor ||
-      (card.type === "number" &&
-        topCard.type === "number" &&
-        card.value == topCard.value) ||
-      (card.type !== "number" && card.type === topCard.type)
+      card.color === gameState.topCard.color ||
+      (card.type === gameState.topCard.type && card.value === gameState.topCard.value)
     );
   }
 

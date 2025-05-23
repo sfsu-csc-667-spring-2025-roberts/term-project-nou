@@ -34,13 +34,23 @@ export const updateGameState = (data) => {
     gameState.status = data.status || gameState.status;
     gameState.roomId = data.roomId || gameState.roomId;
 
+    // Update player hands
+    if (data.playerHands) {
+      // Find my hand in the player hands
+      const myHand = data.playerHands[gameState.myId];
+      if (myHand) {
+        gameState.myHand = myHand;
+      }
+    }
+
     console.log("[Game State] Updated state:", {
       players: gameState.players.length,
       currentPlayer: gameState.currentPlayer,
       topCard: gameState.topCard,
       direction: gameState.direction,
       status: gameState.status,
-      roomId: gameState.roomId
+      roomId: gameState.roomId,
+      myHand: gameState.myHand.length
     });
 
     return true;

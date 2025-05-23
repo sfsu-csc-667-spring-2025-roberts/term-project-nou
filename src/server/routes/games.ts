@@ -112,6 +112,198 @@ router.get(
   }) as RequestHandler
 );
 
+router.get(
+  "/:gameId/state",
+  (async (request: RequestWithSession, response: Response) => {
+    const userId = request.session.userId;
+    if (!userId) {
+      response.status(401).json({ message: "Unauthorized" });
+      return;
+    }
+
+    const { gameId } = request.params;
+    console.log(`[Game Route] Fetching game state for game ID: ${gameId}, user ID: ${userId}`);
+    
+    try {
+      // Get the game state
+      const gameState = await db.oneOrNone(
+        `WITH game_info AS (
+          SELECT 
+            g.id,
+            g.status,
+            g.winner_id,
+            g.start_time,
+            g.end_time,
+            gs.current_player_id,
+            gs.direction,
+            gs.current_color,
+            gs.last_card_played_id,
+            gs.discard_pile_count,
+            gs.draw_pile_count,
+            gs.last_action_time,
+            gs.status as game_status
+          FROM games g
+          LEFT JOIN "gameState" gs ON g.id = gs.game_id
+          WHERE g.id = $1
+        ),
+        player_cards AS (
+          SELECT 
+            gc.game_id,
+            gc.player_id,
+            json_agg(
+              json_build_object(
+                'id', gc.id,
+                'type', gc.card_type,
+                'color', gc.card_color,
+                'value', gc.card_value,
+                'position', gc.position
+              ) ORDER BY gc.position
+            ) as hand
+          FROM "gameCards" gc
+          WHERE gc.game_id = $1 AND gc.location = 'hand'
+          GROUP BY gc.game_id, gc.player_id
+        ),
+        discard_pile AS (
+          SELECT 
+            gc.game_id,
+            json_build_object(
+              'id', gc.id,
+              'type', gc.card_type,
+              'color', gc.card_color,
+              'value', gc.card_value
+            ) as top_card
+          FROM "gameCards" gc
+          WHERE gc.game_id = $1 AND gc.location = 'discard'
+          ORDER BY gc.position DESC
+          LIMIT 1
+        ),
+        draw_pile AS (
+          SELECT 
+            gc.game_id,
+            COUNT(*) as card_count,
+            json_agg(
+              json_build_object(
+                'id', gc.id,
+                'type', gc.card_type,
+                'color', gc.card_color,
+                'value', gc.card_value
+              ) ORDER BY gc.position
+            ) as cards
+          FROM "gameCards" gc
+          WHERE gc.game_id = $1 AND gc.location = 'deck'
+          GROUP BY gc.game_id
+        ),
+        players AS (
+          SELECT 
+            u.id,
+            u.username,
+            u.email,
+            u.socket_id,
+            gu.game_id,
+            gu.seat,
+            gu.status as player_status,
+            COALESCE(pc.hand, '[]'::json) as hand
+          FROM users u
+          JOIN "game_users" gu ON u.id = gu.user_id
+          LEFT JOIN player_cards pc ON pc.player_id = u.id AND pc.game_id = gu.game_id
+          WHERE gu.game_id = $1
+          ORDER BY gu.seat
+        )
+        SELECT 
+          gi.*,
+          COALESCE(
+            (
+              SELECT json_object_agg(pc.player_id, pc.hand)
+              FROM player_cards pc
+              WHERE pc.game_id = gi.id
+            ),
+            '{}'::json
+          ) as player_hands,
+          dp.top_card,
+          COALESCE(
+            (
+              SELECT json_agg(
+                json_build_object(
+                  'id', p.id,
+                  'username', p.username,
+                  'email', p.email,
+                  'socket_id', p.socket_id,
+                  'seat', p.seat,
+                  'status', p.player_status,
+                  'hand', p.hand
+                )
+              )
+              FROM players p
+              WHERE p.game_id = gi.id
+            ),
+            '[]'::json
+          ) as players,
+          COALESCE(
+            (
+              SELECT json_build_object(
+                'count', dp.card_count,
+                'cards', dp.cards
+              )
+              FROM draw_pile dp
+              WHERE dp.game_id = gi.id
+            ),
+            json_build_object('count', 0, 'cards', '[]'::json)
+          ) as draw_pile,
+          CASE 
+            WHEN gi.current_player_id = $2 THEN true
+            ELSE false
+          END as is_my_turn
+        FROM game_info gi
+        LEFT JOIN discard_pile dp ON gi.id = dp.game_id
+        WHERE gi.id = $1`,
+        [gameId, userId]
+      );
+
+      if (!gameState) {
+        console.log(`[Game Route] No game state found for game ID: ${gameId}`);
+        response.status(404).json({ message: "Game not found" });
+        return;
+      }
+
+      // Add the user's ID to the response
+      gameState.myId = userId;
+      gameState.gameId = gameState.id;
+
+      // Log the game state for debugging
+      console.log(`[Game Route] Game state for game ${gameId}:`, {
+        id: gameState.id,
+        gameId: gameState.gameId,
+        status: gameState.status,
+        game_status: gameState.game_status,
+        current_player_id: gameState.current_player_id,
+        current_color: gameState.current_color,
+        direction: gameState.direction,
+        player_hands: gameState.player_hands ? Object.keys(gameState.player_hands).length : 0,
+        top_card: gameState.top_card ? 'present' : 'missing',
+        players: gameState.players ? gameState.players.length : 0,
+        card_counts: {
+          deck: gameState.draw_pile_count,
+          discard: gameState.discard_pile_count,
+          draw_pile: gameState.draw_pile ? gameState.draw_pile.count : 0
+        },
+        is_my_turn: gameState.is_my_turn,
+        last_action_time: gameState.last_action_time
+      });
+
+      // Log the full game state for debugging
+      console.log(`[Game Route] Full game state:`, JSON.stringify(gameState, null, 2));
+
+      // Add a small delay to ensure all updates are complete
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      response.json(gameState);
+    } catch (error) {
+      console.error(`[Game Route] Error getting game state for game ${gameId}:`, error);
+      response.status(500).json({ message: "Failed to get game state" });
+    }
+  }) as unknown as RequestHandler
+);
+
 // Add leave game route
 router.post(
   "/:gameId/leave",

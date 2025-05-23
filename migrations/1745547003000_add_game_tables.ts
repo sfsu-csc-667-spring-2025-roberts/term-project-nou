@@ -1,21 +1,6 @@
 import { MigrationBuilder } from 'node-pg-migrate';
 
 export const up = (pgm: MigrationBuilder) => {
-  // Create gameState table
-  pgm.createTable('gameState', {
-    id: { type: 'serial', primaryKey: true },
-    game_id: { type: 'integer', notNull: true, references: 'games', onDelete: 'CASCADE' },
-    current_player_id: { type: 'integer', references: 'users' },
-    direction: { type: 'text', notNull: true, default: 'clockwise' },
-    current_color: { type: 'text' },
-    last_card_played_id: { type: 'integer' },
-    discard_pile_count: { type: 'integer', notNull: true, default: 0 },
-    draw_pile_count: { type: 'integer', notNull: true, default: 0 },
-    last_action_time: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') },
-    created_at: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') },
-    updated_at: { type: 'timestamp', notNull: true, default: pgm.func('CURRENT_TIMESTAMP') }
-  });
-
   // Create game_cards table
   pgm.createTable('game_cards', {
     id: { type: 'serial', primaryKey: true },
@@ -31,7 +16,6 @@ export const up = (pgm: MigrationBuilder) => {
   });
 
   // Add indexes for better query performance
-  pgm.createIndex('gameState', 'game_id');
   pgm.createIndex('game_cards', 'game_id');
   pgm.createIndex('game_cards', 'player_id');
   pgm.createIndex('game_cards', 'location');
@@ -50,12 +34,15 @@ export const up = (pgm: MigrationBuilder) => {
     },
     `
     DECLARE
-      v_card_id integer;
+      v_color text;
+      v_value integer;
+      v_action text;
+      v_wild text;
       v_player_id integer;
       v_position integer;
     BEGIN
       -- Add number cards (0-9)
-      FOR v_color IN SELECT unnest(ARRAY['red', 'blue', 'green', 'yellow']) LOOP
+      FOREACH v_color IN ARRAY ARRAY['red', 'blue', 'green', 'yellow'] LOOP
         FOR v_value IN 0..9 LOOP
           -- Add two of each number card (except 0)
           FOR i IN 1..2 LOOP
@@ -68,8 +55,8 @@ export const up = (pgm: MigrationBuilder) => {
       END LOOP;
 
       -- Add action cards (skip, reverse, draw2)
-      FOR v_color IN SELECT unnest(ARRAY['red', 'blue', 'green', 'yellow']) LOOP
-        FOR v_action IN SELECT unnest(ARRAY['skip', 'reverse', 'draw2']) LOOP
+      FOREACH v_color IN ARRAY ARRAY['red', 'blue', 'green', 'yellow'] LOOP
+        FOREACH v_action IN ARRAY ARRAY['skip', 'reverse', 'draw2'] LOOP
           -- Add two of each action card
           FOR i IN 1..2 LOOP
             INSERT INTO game_cards (game_id, card_type, card_color, card_value, location)
@@ -79,7 +66,7 @@ export const up = (pgm: MigrationBuilder) => {
       END LOOP;
 
       -- Add wild cards (wild, wild4)
-      FOR v_wild IN SELECT unnest(ARRAY['wild', 'wild4']) LOOP
+      FOREACH v_wild IN ARRAY ARRAY['wild', 'wild4'] LOOP
         -- Add four of each wild card
         FOR i IN 1..4 LOOP
           INSERT INTO game_cards (game_id, card_type, card_color, card_value, location)
@@ -93,7 +80,7 @@ export const up = (pgm: MigrationBuilder) => {
       WHERE game_id = p_game_id AND location = 'deck';
 
       -- Deal cards to players
-      FOR v_player_id IN SELECT unnest(p_player_ids) LOOP
+      FOREACH v_player_id IN ARRAY p_player_ids LOOP
         FOR v_position IN 1..7 LOOP
           -- Get a card from the deck
           WITH card AS (
@@ -146,5 +133,4 @@ export const down = (pgm: MigrationBuilder) => {
     { name: 'p_player_ids', type: 'integer[]' }
   ]);
   pgm.dropTable('game_cards');
-  pgm.dropTable('gameState');
 }; 

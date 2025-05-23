@@ -335,69 +335,74 @@ body {
 }
 
 .uno-card {
-  width: 120px;
-  height: 180px;
+  width: 100px;
+  height: 150px;
+  background: white;
   border-radius: 10px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
   position: relative;
-  transition: all 0.2s;
-  background-color: white;
-  overflow: hidden;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+  margin: 0 -20px;
 }
 
-.uno-card.mini {
-  width: 80px;
-  height: 120px;
+.uno-card:hover {
+  transform: translateY(-10px);
 }
 
-.uno-card.back {
-  background-color: #333;
-  background-image:
-    linear-gradient(
-      45deg,
-      #444 25%,
-      transparent 25%,
-      transparent 75%,
-      #444 75%,
-      #444
-    ),
-    linear-gradient(
-      45deg,
-      #444 25%,
-      transparent 25%,
-      transparent 75%,
-      #444 75%,
-      #444
-    );
-  background-size: 20px 20px;
-  background-position:
-    0 0,
-    10px 10px;
-  border: 5px solid white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+.uno-card.playable {
+  cursor: pointer;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-.card-logo {
-  color: white;
-  font-size: 2rem;
-  font-weight: bold;
-  transform: rotate(-45deg);
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+.uno-card.disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
-.uno-card.mini .card-logo {
-  font-size: 1.5rem;
+.uno-card.red {
+  border: 2px solid #ff0000;
+  color: #ff0000;
 }
 
-.card-inner {
+.uno-card.blue {
+  border: 2px solid #0000ff;
+  color: #0000ff;
+}
+
+.uno-card.green {
+  border: 2px solid #00ff00;
+  color: #00ff00;
+}
+
+.uno-card.yellow {
+  border: 2px solid #ffff00;
+  color: #ffff00;
+}
+
+.uno-card.black {
+  border: 2px solid #000000;
+  color: #000000;
+}
+
+.card-content {
   width: 100%;
   height: 100%;
-  padding: 10px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  padding: 10px;
+}
+
+.card-value {
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.card-icon {
+  font-size: 32px;
+  text-align: center;
+  margin: 10px 0;
 }
 
 .card-corner {
@@ -425,32 +430,6 @@ body {
   font-weight: bold;
   color: white;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
-}
-
-.uno-card.red {
-  background-color: #f44336;
-}
-
-.uno-card.blue {
-  background-color: #2196f3;
-}
-
-.uno-card.green {
-  background-color: #4caf50;
-}
-
-.uno-card.yellow {
-  background-color: #ffeb3b;
-}
-
-.uno-card.yellow .card-corner,
-.uno-card.yellow .card-center {
-  color: #333;
-  text-shadow: none;
-}
-
-.uno-card.black {
-  background-color: #000;
 }
 
 .wild-colors {
@@ -643,13 +622,8 @@ body {
   }
 
   .uno-card {
-    width: 100px;
-    height: 150px;
-  }
-
-  .uno-card.mini {
-    width: 60px;
-    height: 90px;
+    width: 80px;
+    height: 120px;
   }
 
   .player-hand .uno-card:hover {
@@ -673,11 +647,6 @@ body {
 @media (max-width: 480px) {
   .game-container {
     padding: 10px;
-  }
-
-  .uno-card {
-    width: 80px;
-    height: 120px;
   }
 
   .card-center {

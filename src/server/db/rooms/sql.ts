@@ -127,53 +127,28 @@ updated_room AS (
   AND EXISTS (SELECT 1 FROM room_check)
   AND (SELECT current_players FROM room_check) >= 2
   RETURNING id, status, current_players
-),
-new_game AS (
-  INSERT INTO games (
-    room_id,
-    status,
-    start_time
-  )
-  SELECT 
-    id,
-    'active',
-    NOW()
-  FROM updated_room
-  WHERE EXISTS (SELECT 1 FROM updated_room)
-  RETURNING id
-),
-add_players AS (
-  INSERT INTO "game_users" (game_id, user_id, seat, status)
-  SELECT 
-    ng.id,
-    ru.user_id,
-    ROW_NUMBER() OVER (ORDER BY ru.joined_at),
-    'active'
-  FROM new_game ng
-  CROSS JOIN room_users ru
-  WHERE ru.room_id = $1
-  RETURNING game_id
+)
+INSERT INTO games (
+  room_id,
+  status,
+  start_time
 )
 SELECT 
-  ng.id,
-  (SELECT status FROM room_check) as previous_status, 
-  (SELECT current_players FROM room_check) as player_count,
-  CASE 
-    WHEN NOT EXISTS (SELECT 1 FROM room_check) THEN 'room_not_found'
-    WHEN (SELECT status FROM room_check) != 'waiting' THEN 'invalid_status'
-    WHEN (SELECT current_players FROM room_check) < 2 THEN 'insufficient_players'
-    ELSE 'success'
-  END as result
-FROM new_game ng;
+  id,
+  'active',
+  NOW()
+FROM updated_room
+WHERE EXISTS (SELECT 1 FROM updated_room)
+RETURNING id;
 `;
 
 export const GET_room_STATE_SQL = `
 SELECT 
   r.id,
   r.status,
-  r.winner_id,
-  r.start_time,
-  r.end_time,
+  g.winner_id,
+  g.start_time,
+  g.end_time,
   gs.current_player_id,
   gs.direction,
   gs.current_color,
@@ -182,7 +157,8 @@ SELECT
   gs.draw_pile_count,
   gs.last_action_time
 FROM rooms r
-LEFT JOIN gameState gs ON r.id = gs.game_id
+LEFT JOIN games g ON g.room_id = r.id
+LEFT JOIN "gameState" gs ON gs.game_id = g.id
 WHERE r.id = $1;
 `;
 
