@@ -52,13 +52,20 @@ WHERE gu.room_id = $(roomId)
 
 export const LEAVE_ROOM_SQL = `
 WITH user_info AS (
-  SELECT r.created_by, r.id, r.current_players
+  SELECT r.created_by, r.id, r.current_players, r.status
   FROM rooms r
   WHERE r.id = $(roomId)
 ),
 deleted_membership AS (
   DELETE FROM room_users
   WHERE room_id = $(roomId) AND user_id = $(userId)
+  RETURNING *
+),
+game_cleanup AS (
+  DELETE FROM "game_users"
+  WHERE game_id IN (
+    SELECT id FROM games WHERE room_id = $(roomId)
+  ) AND user_id = $(userId)
   RETURNING *
 ),
 room_deletion AS (
@@ -76,7 +83,7 @@ updated_room AS (
   WHERE id = $(roomId)
   AND EXISTS (SELECT 1 FROM deleted_membership)
   AND NOT EXISTS (SELECT 1 FROM room_deletion)
-  RETURNING id, current_players
+  RETURNING id, current_players, status
 )
 SELECT 
   CASE 
@@ -86,7 +93,8 @@ SELECT
       json_build_object(
         'deleted', false,
         'id', (SELECT id FROM updated_room),
-        'current_players', (SELECT current_players FROM updated_room)
+        'current_players', (SELECT current_players FROM updated_room),
+        'status', (SELECT status FROM updated_room)
       )
     ELSE NULL
   END as result;
@@ -98,38 +106,74 @@ WHERE id = $(roomId) AND created_by = $(userId)
 RETURNING *;
 `;
 
+export const RESET_ROOM_SQL = `
+UPDATE rooms
+SET status = 'waiting'
+WHERE id = $1
+RETURNING id, status, current_players;
+`;
+
 export const START_room_SQL = `
-WITH updated_room AS (
+WITH room_check AS (
+  SELECT id, status, current_players
+  FROM rooms
+  WHERE id = $1
+),
+updated_room AS (
   UPDATE rooms
-  SET status = 'playing',
-      start_time = NOW()
-  WHERE id = $1 AND status = 'waiting'
+  SET status = 'playing'
+  WHERE id = $1 
+  AND status = 'waiting'
+  AND EXISTS (SELECT 1 FROM room_check)
+  AND (SELECT current_players FROM room_check) >= 2
+  RETURNING id, status, current_players
+),
+new_game AS (
+  INSERT INTO games (
+    room_id,
+    status,
+    start_time
+  )
+  SELECT 
+    id,
+    'active',
+    NOW()
+  FROM updated_room
+  WHERE EXISTS (SELECT 1 FROM updated_room)
   RETURNING id
-)
-INSERT INTO roomState (
-  room_id,
-  status,
-  current_player_id,
-  direction,
-  current_color
+),
+add_players AS (
+  INSERT INTO "game_users" (game_id, user_id, seat, status)
+  SELECT 
+    ng.id,
+    ru.user_id,
+    ROW_NUMBER() OVER (ORDER BY ru.joined_at),
+    'active'
+  FROM new_game ng
+  CROSS JOIN room_users ru
+  WHERE ru.room_id = $1
+  RETURNING game_id
 )
 SELECT 
-  id,
-  'playing',
-  (SELECT user_id FROM room_users WHERE room_id = $1 ORDER BY id ASC LIMIT 1),
-  'clockwise',
-  'red'
-FROM updated_room
-RETURNING room_id;
+  ng.id,
+  (SELECT status FROM room_check) as previous_status, 
+  (SELECT current_players FROM room_check) as player_count,
+  CASE 
+    WHEN NOT EXISTS (SELECT 1 FROM room_check) THEN 'room_not_found'
+    WHEN (SELECT status FROM room_check) != 'waiting' THEN 'invalid_status'
+    WHEN (SELECT current_players FROM room_check) < 2 THEN 'insufficient_players'
+    ELSE 'success'
+  END as result
+FROM new_game ng;
 `;
 
 export const GET_room_STATE_SQL = `
 SELECT 
-  g.id,
-  g.status,
-  g.winner_id,
-  g.start_time,
-  g.end_time,
+  r.id,
+  r.status,
+  r.winner_id,
+  r.start_time,
+  r.end_time,
   gs.current_player_id,
   gs.direction,
   gs.current_color,
@@ -137,9 +181,9 @@ SELECT
   gs.discard_pile_count,
   gs.draw_pile_count,
   gs.last_action_time
-FROM rooms g
-LEFT JOIN roomState gs ON g.id = gs.room_id
-WHERE g.id = $1;
+FROM rooms r
+LEFT JOIN gameState gs ON r.id = gs.game_id
+WHERE r.id = $1;
 `;
 
 export const UPDATE_room_STATE_SQL = `

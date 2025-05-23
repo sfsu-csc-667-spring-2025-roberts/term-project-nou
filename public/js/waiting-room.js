@@ -42,6 +42,21 @@ document.addEventListener("DOMContentLoaded", () => {
     upgrade: false,
   });
 
+  // Debug socket connection
+  socket.on("connect", () => {
+    console.log("Socket connected with ID:", socket.id);
+    // Set the user ID immediately after connection
+    socket.emit("setUserId", parseInt(userInfo.userId));
+    if (userInfo.roomId) {
+      console.log("Joining room:", userInfo.roomId);
+      socket.emit("joinRoom", { roomId: userInfo.roomId });
+    }
+  });
+
+  socket.on("connect_error", (error) => {
+    console.error("Socket connection error:", error);
+  });
+
   // Chat UI Functions
   const chatUI = {
     addSystemMessage: (message) => {
@@ -98,7 +113,34 @@ document.addEventListener("DOMContentLoaded", () => {
   // Room Management Functions
   const roomManager = {
     startGame: () => {
-      socket.emit("startGame", { roomId: userInfo.roomId });
+      console.log("Start game button clicked", {
+        socketId: socket.id,
+        isConnected: socket.connected,
+        userId: userInfo.userId,
+        isOwner: userInfo.isOwner
+      });
+      
+      if (!userInfo.isOwner) {
+        console.log("Only room owner can start the game");
+        alert("Only the room owner can start the game");
+        return;
+      }
+
+      if (!socket.connected) {
+        console.error("Socket not connected!");
+        alert("Connection lost. Please refresh the page.");
+        return;
+      }
+
+      console.log("Emitting startGame event", {
+        roomId: userInfo.roomId,
+        userId: userInfo.userId
+      });
+      
+      socket.emit("startGame", { 
+        roomId: userInfo.roomId,
+        userId: parseInt(userInfo.userId)
+      });
     },
 
     leaveRoom: async () => {
@@ -158,6 +200,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
 
     updatePlayerList: (members, roomOwner) => {
+      console.log("Updating player list", { members, roomOwner });
       elements.currentPlayers.textContent = members.length;
       elements.waitingPlayers.innerHTML = "";
 
@@ -171,6 +214,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         elements.waitingPlayers.appendChild(li);
       });
+
+      // Update start game button state
+      if (elements.startGame) {
+        const canStart = members.length >= 2;
+        console.log("Updating start button state", { canStart, membersLength: members.length });
+        elements.startGame.disabled = !canStart;
+      }
     },
   };
 
@@ -218,15 +268,6 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // Socket Event Handlers
-  socket.on("connect", () => {
-    console.log("Socket connected successfully");
-    socket.emit("setUserId", parseInt(userInfo.userId));
-  });
-
-  socket.on("connect_error", (error) => {
-    console.error("Socket connection error:", error);
-  });
-
   socket.on("chatMessage", (message) => {
     chatUI.addChatMessage(message, message.userId === userInfo.userId);
   });
@@ -259,11 +300,27 @@ document.addEventListener("DOMContentLoaded", () => {
     readyManager.updatePlayerReady(userId, ready);
   });
 
-  socket.on("gameStarting", ({ readyPlayers }) => {
-    if (readyPlayers.some((player) => player.id === userInfo.userId)) {
-      window.location.href = `/game/${userInfo.roomId}`;
-    } else {
-      alert("Game is starting but you are not ready!");
+  socket.on("gameStarting", (data) => {
+    console.log("Game starting event received:", data);
+    if (!data.gameId) {
+      console.error("No game ID in gameStarting event:", data);
+      return;
+    }
+    // Store game ID in session storage for the game board
+    sessionStorage.setItem('currentGameId', data.gameId);
+    // Redirect to game page
+    window.location.href = `/games/${data.gameId}`;
+  });
+
+  socket.on("roomUpdate", (data) => {
+    console.log("Room update received:", data);
+    // Only redirect if we have both a game ID and the room is in playing state
+    if (data.status === "playing" && data.gameId) {
+      console.log("Room is now playing, redirecting to game:", data.gameId);
+      // Store game ID in session storage for the game board
+      sessionStorage.setItem('currentGameId', data.gameId);
+      // Redirect to game page
+      window.location.href = `/games/${data.gameId}`;
     }
   });
 
@@ -281,10 +338,20 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  socket.on("error", ({ message }) => {
-    alert(message);
+  socket.on("error", (error) => {
+    console.error("Socket error:", error);
+    // Handle both string errors and error objects
+    const errorMessage = typeof error === 'object' && error.message ? error.message : error;
+    const errorContext = typeof error === 'object' && error.context ? ` (${error.context})` : '';
+    alert(`Error: ${errorMessage}${errorContext}`);
+    // Don't redirect on error
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log("Socket disconnected:", reason);
   });
 
   // Join room after all setup is complete
+  console.log("Joining room", { roomId: userInfo.roomId });
   socket.emit("joinRoom", { roomId: userInfo.roomId });
 });

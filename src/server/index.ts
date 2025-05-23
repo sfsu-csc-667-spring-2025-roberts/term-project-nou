@@ -19,19 +19,32 @@ const app = express();
 const server = createServer(app);
 const io = setupSocket(server);
 
-// Add CSP headers first
+// Set up view engine
+app.set("views", path.join(process.cwd(), "src", "server", "views"));
+app.set("view engine", "ejs");
+
+// Set up CSP headers
 app.use((req, res, next) => {
-  res.setHeader(
-    "Content-Security-Policy",
-    "default-src 'self' http://localhost:35729; " +
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:35729 https://localhost:35729; " +
-    "style-src 'self' 'unsafe-inline'; " +
-    "img-src 'self' data: http://localhost:3000; " +
-    "connect-src 'self' ws://localhost:35729 wss://localhost:35729; " +
-    "font-src 'self'; " +
-    "frame-src 'self'; " +
-    "worker-src 'self' blob:;"
-  );
+  // In development, allow LiveReload
+  if (process.env.NODE_ENV === "development") {
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:35729; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data:; " +
+      "connect-src 'self' ws://localhost:35729 ws://localhost:3000;"
+    );
+  } else {
+    // Production CSP
+    res.setHeader(
+      "Content-Security-Policy",
+      "default-src 'self'; " +
+      "script-src 'self' 'unsafe-inline'; " +
+      "style-src 'self' 'unsafe-inline'; " +
+      "img-src 'self' data:;"
+    );
+  }
   next();
 });
 
@@ -83,8 +96,6 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(process.cwd(), "public")));
-app.set("views", path.join(process.cwd(), "src", "server", "views"));
-app.set("view engine", "ejs");
 
 app.use("/", routes.root);
 app.use("/test", routes.test);
