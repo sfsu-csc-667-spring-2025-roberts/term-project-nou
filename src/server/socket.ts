@@ -7,6 +7,7 @@ import { Server } from "socket.io";
 import { Server as HttpServer } from "http";
 import { Room, Message, User } from "./db";
 import db from "./db/connection";
+import { getFullGameState } from './db/rooms';
 
 // Type Definitions
 interface Message {
@@ -389,19 +390,10 @@ export function setupSocket(server: HttpServer) {
         console.log("Game start result:", result);
         
         if (result.result === 'success') {
-          // Get the updated game state
-          const gameState = await Room.get_room_state(roomId);
-          console.log("Game state after start:", gameState);
-          
-          // Emit game started event to all players in the room
-          io.to(roomId.toString()).emit("gameStarted", {
-            gameId: result.id,
-            players: gameState.players,
-            currentPlayer: gameState.current_player_id,
-            direction: gameState.direction,
-            topCard: gameState.discard_pile_top,
-            playerHands: gameState.player_hands
-          });
+          // Get the updated game state (nouvelle version complète)
+          const fullGameState = await getFullGameState(roomId);
+          console.log("[Socket] Full game state after start:", fullGameState);
+          io.to(roomId.toString()).emit("gameStarted", fullGameState);
 
           // Update room status in lobby
           const rooms = await Room.getAllRooms();

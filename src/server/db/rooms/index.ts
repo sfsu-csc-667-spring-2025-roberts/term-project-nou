@@ -461,6 +461,7 @@ export const startGame = async (roomId: number) => {
             FROM "game_cards"
             WHERE game_id = $1
             AND location = 'deck'
+            AND player_id IS NULL
             ORDER BY RANDOM()
             LIMIT 7
           ) selected_cards
@@ -487,6 +488,7 @@ export const startGame = async (roomId: number) => {
         FROM "game_cards"
         WHERE game_id = $1
         AND location = 'deck'
+        AND player_id IS NULL
         ORDER BY RANDOM()
         LIMIT 1
       ),
@@ -540,30 +542,38 @@ export const startGame = async (roomId: number) => {
 
     // Get all players in the room with their hands
     const playersWithHands = await db.manyOrNone(
-      `SELECT 
-         u.id,
-         u.username,
-         u.email,
-         u.socket_id,
-         ru.room_id,
-         ru.joined_at,
-         json_agg(
-           json_build_object(
-             'id', gc.id,
-             'type', gc.card_type,
-             'color', gc.card_color,
-             'value', gc.card_value
-           )
-         ) as hand
-       FROM room_users ru
-       JOIN users u ON ru.user_id = u.id
-       LEFT JOIN "game_cards" gc ON gc.game_id = $1 AND gc.location = 'hand' AND gc.player_id = u.id
-       WHERE ru.room_id = $2
-       GROUP BY u.id, u.username, u.email, u.socket_id, ru.room_id, ru.joined_at
-       ORDER BY ru.joined_at ASC`,
+      `WITH player_cards AS (
+        SELECT 
+          gc.player_id,
+          json_agg(
+            json_build_object(
+              'id', gc.id,
+              'type', gc.card_type,
+              'color', gc.card_color,
+              'value', gc.card_value,
+              'position', gc.position
+            ) ORDER BY gc.position
+          ) as hand
+        FROM "game_cards" gc
+        WHERE gc.game_id = $1 AND gc.location = 'hand'
+        GROUP BY gc.player_id
+      )
+      SELECT 
+        u.id,
+        u.username,
+        u.email,
+        u.socket_id,
+        ru.room_id,
+        ru.joined_at,
+        COALESCE(pc.hand, '[]'::json) as hand
+      FROM room_users ru
+      JOIN users u ON ru.user_id = u.id
+      LEFT JOIN player_cards pc ON pc.player_id = u.id
+      WHERE ru.room_id = $2
+      ORDER BY ru.joined_at ASC`,
       [gameResult.id, roomId]
     );
-    console.log("Players with hands:", playersWithHands);
+    console.log("Players with hands:", JSON.stringify(playersWithHands, null, 2));
 
     // Get the top card of the discard pile
     const topCard = await db.oneOrNone(
@@ -775,6 +785,7 @@ export const Room = {
               FROM "game_cards"
               WHERE game_id = $1
               AND location = 'deck'
+              AND player_id IS NULL
               ORDER BY RANDOM()
               LIMIT 7
             ) selected_cards
@@ -801,6 +812,7 @@ export const Room = {
           FROM "game_cards"
           WHERE game_id = $1
           AND location = 'deck'
+          AND player_id IS NULL
           ORDER BY RANDOM()
           LIMIT 1
         ),
@@ -854,30 +866,38 @@ export const Room = {
 
       // Get all players in the room with their hands
       const playersWithHands = await db.manyOrNone(
-        `SELECT 
-           u.id,
-           u.username,
-           u.email,
-           u.socket_id,
-           ru.room_id,
-           ru.joined_at,
-           json_agg(
-             json_build_object(
-               'id', gc.id,
-               'type', gc.card_type,
-               'color', gc.card_color,
-               'value', gc.card_value
-             )
-           ) as hand
-         FROM room_users ru
-         JOIN users u ON ru.user_id = u.id
-         LEFT JOIN "game_cards" gc ON gc.game_id = $1 AND gc.location = 'hand' AND gc.player_id = u.id
-         WHERE ru.room_id = $2
-         GROUP BY u.id, u.username, u.email, u.socket_id, ru.room_id, ru.joined_at
-         ORDER BY ru.joined_at ASC`,
+        `WITH player_cards AS (
+          SELECT 
+            gc.player_id,
+            json_agg(
+              json_build_object(
+                'id', gc.id,
+                'type', gc.card_type,
+                'color', gc.card_color,
+                'value', gc.card_value,
+                'position', gc.position
+              ) ORDER BY gc.position
+            ) as hand
+          FROM "game_cards" gc
+          WHERE gc.game_id = $1 AND gc.location = 'hand'
+          GROUP BY gc.player_id
+        )
+        SELECT 
+          u.id,
+          u.username,
+          u.email,
+          u.socket_id,
+          ru.room_id,
+          ru.joined_at,
+          COALESCE(pc.hand, '[]'::json) as hand
+        FROM room_users ru
+        JOIN users u ON ru.user_id = u.id
+        LEFT JOIN player_cards pc ON pc.player_id = u.id
+        WHERE ru.room_id = $2
+        ORDER BY ru.joined_at ASC`,
         [gameResult.id, roomId]
       );
-      console.log("Players with hands:", playersWithHands);
+      console.log("Players with hands:", JSON.stringify(playersWithHands, null, 2));
 
       // Get the top card of the discard pile
       const topCard = await db.oneOrNone(
@@ -923,6 +943,85 @@ export const Room = {
       throw error;
     }
   },
+};
+
+// Ajout d'une fonction utilitaire pour l'état de jeu complet
+export const getFullGameState = async (roomId: number) => {
+  // Récupérer l'id du jeu associé à la room
+  const game = await db.oneOrNone('SELECT id FROM games WHERE room_id = $1 ORDER BY id DESC LIMIT 1', [roomId]);
+  if (!game) return null;
+  const gameId = game.id;
+
+  // Récupérer tous les joueurs et leurs mains
+  const players = await db.manyOrNone(`
+    WITH player_cards AS (
+      SELECT 
+        gc.player_id,
+        json_agg(
+          json_build_object(
+            'id', gc.id,
+            'type', gc.card_type,
+            'color', gc.card_color,
+            'value', gc.card_value,
+            'position', gc.position
+          ) ORDER BY gc.position
+        ) as hand
+      FROM "game_cards" gc
+      WHERE gc.game_id = $1 AND gc.location = 'hand'
+      GROUP BY gc.player_id
+    )
+    SELECT 
+      u.id,
+      u.username,
+      u.email,
+      u.socket_id,
+      gu.seat,
+      gu.status as player_status,
+      COALESCE(pc.hand, '[]'::json) as hand
+    FROM game_users gu
+    JOIN users u ON gu.user_id = u.id
+    LEFT JOIN player_cards pc ON pc.player_id = u.id
+    WHERE gu.game_id = $1
+    ORDER BY gu.seat
+  `, [gameId]);
+
+  // Récupérer l'état global du jeu
+  const state = await db.oneOrNone(`
+    SELECT 
+      gs.current_player_id,
+      gs.direction,
+      gs.current_color,
+      gs.status,
+      gs.discard_pile_count,
+      gs.draw_pile_count
+    FROM "gameState" gs
+    WHERE gs.game_id = $1
+  `, [gameId]);
+
+  // Récupérer la carte du dessus de la pile de défausse
+  const topCard = await db.oneOrNone(`
+    SELECT 
+      id,
+      card_type as type,
+      card_color as color,
+      card_value as value
+    FROM "game_cards"
+    WHERE game_id = $1 AND location = 'discard'
+    ORDER BY position DESC
+    LIMIT 1
+  `, [gameId]);
+
+  return {
+    players,
+    currentPlayer: state?.current_player_id,
+    direction: state?.direction,
+    currentColor: state?.current_color,
+    status: state?.status,
+    topCard,
+    discardPileCount: state?.discard_pile_count,
+    drawPileCount: state?.draw_pile_count,
+    gameId
+  };
 };
 
 export default Room;
