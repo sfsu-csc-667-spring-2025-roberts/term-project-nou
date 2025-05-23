@@ -37,6 +37,50 @@ socket.on("chatMessage", (message) => {
   messagesDiv.scrollTop = messagesDiv.scrollHeight;
 });
 
+// Add room update handlers
+socket.on("roomListUpdate", (rooms) => {
+  const roomsContainer = document.querySelector(".rooms-container");
+  if (!roomsContainer) return;
+
+  if (rooms.length === 0) {
+    roomsContainer.innerHTML = `
+      <div class="no-rooms">
+        <p>No rooms available. Be the first to create one!</p>
+      </div>
+    `;
+    return;
+  }
+
+  roomsContainer.innerHTML = rooms.map(room => `
+    <div class="room-card">
+      <div class="room-header">
+        <h3>${room.name}</h3>
+        <span class="room-id">#${room.id}</span>
+      </div>
+      <div class="room-info">
+        <div class="room-players">
+          <span class="label">Players:</span>
+          <span class="value">${room.current_players}/${room.max_players}</span>
+        </div>
+        <div class="room-privacy">
+          <span class="label">Status:</span>
+          <span class="value">${room.is_private ? '🔒 Private' : '🌐 Public'}</span>
+        </div>
+      </div>
+      <form action="/rooms/join/${room.id}" method="post" class="join-form">
+        <input type="hidden" name="roomId" value="${room.id}">
+        ${room.is_private ? `
+          <input type="password" name="password" placeholder="Room Password" required>
+        ` : ''}
+        <button type="submit" class="join-button">Join Room</button>
+      </form>
+    </div>
+  `).join('');
+});
+
+// Join lobby room to receive updates
+socket.emit("joinLobby");
+
 socket.on("connect_error", (error) => {
   console.error("Socket connection error:", error);
 });

@@ -27,8 +27,8 @@ const setupSessions = (app: Express) => {
         tableName: "session",
       }),
       secret: sessionSecret,
-      resave: false,
-      saveUninitialized: false,
+      resave: true,
+      saveUninitialized: true,
       name: "uno.sid",
       cookie: {
         secure: isProduction,

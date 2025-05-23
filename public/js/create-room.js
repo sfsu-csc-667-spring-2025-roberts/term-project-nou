@@ -60,7 +60,9 @@ document.addEventListener("DOMContentLoaded", function () {
         body: JSON.stringify(data),
       });
 
-      if (response.ok) {
+      if (response.redirected) {
+        window.location.href = response.url;
+      } else if (response.ok) {
         const result = await response.json();
         window.location.href = `/rooms/${result.roomId}`;
       } else {

@@ -170,12 +170,16 @@ export function setupSocket(server: HttpServer) {
         }
 
         io.to(roomId).emit("roomMembersUpdate", { members, roomOwner });
+        
+        // Update lobby with new room list
+        const rooms = await Room.getAllRooms();
+        io.emit("roomListUpdate", rooms);
       } catch (error) {
         handleError(error, `joining room ${roomId}`);
       }
     });
 
-    socket.on("leaveRoom", async ({ roomId }) => {
+    socket.on("leaveRoom", async ({ roomId, isOwner }) => {
       try {
         const members = await Room.getRoomUsers(Number(roomId));
         const roomOwner = await Room.getRoomOwner(Number(roomId));
@@ -188,25 +192,61 @@ export function setupSocket(server: HttpServer) {
           return;
         }
 
-        io.to(roomId).emit("playerLeft", { username: socketUser.username });
+        // Emit events before leaving
+        io.to(roomId).emit("playerLeft", { 
+          username: socketUser.username,
+          remainingPlayers: members.length - 1
+        });
 
-        if (roomOwner && socketUser.id === roomOwner.id) {
+        if (isOwner || (roomOwner && socketUser.id === roomOwner.id)) {
+          // Room owner is leaving
+          console.log(`Room owner ${socketUser.username} is leaving room ${roomId}`);
+          
+          // First notify all users that the room is closing
           io.to(roomId).emit("roomClosed");
+          
+          // Get all connected sockets in the room
           const connectedSockets = await io.in(roomId).allSockets();
-          connectedSockets.forEach((socketId) => {
+          console.log(`Found ${connectedSockets.size} connected sockets in room ${roomId}`);
+          
+          // Remove all users from the room
+          for (const socketId of connectedSockets) {
             const clientSocket = io.sockets.sockets.get(socketId);
-            clientSocket?.leave(roomId);
-          });
+            if (clientSocket) {
+              console.log(`Removing socket ${socketId} from room ${roomId}`);
+              clientSocket.leave(roomId);
+              // Don't emit roomClosed again to avoid duplicate messages
+            }
+          }
         } else {
+          // Regular user is leaving
+          console.log(`Regular user ${socketUser.username} is leaving room ${roomId}`);
           socket.leave(roomId);
           const updatedMembers = await Room.getRoomUsers(Number(roomId));
-          io.to(roomId).emit("roomMembersUpdate", {
-            members: updatedMembers,
-            roomOwner,
-          });
+          if (updatedMembers.length > 0) {
+            io.to(roomId).emit("roomMembersUpdate", {
+              members: updatedMembers,
+              roomOwner,
+              currentPlayers: updatedMembers.length
+            });
+          }
         }
+
+        // Update lobby with new room list
+        const rooms = await Room.getAllRooms();
+        io.emit("roomListUpdate", rooms);
       } catch (error) {
-        handleError(error, `handling room ${roomId} leave`);
+        console.error(`Error handling room ${roomId} leave:`, error);
+      }
+    });
+
+    socket.on("joinLobby", async () => {
+      try {
+        socket.join("lobby");
+        const rooms = await Room.getAllRooms();
+        socket.emit("roomListUpdate", rooms);
+      } catch (error) {
+        handleError(error, "joining lobby");
       }
     });
 

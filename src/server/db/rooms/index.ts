@@ -44,47 +44,81 @@ interface RoomSettings {
 }
 
 const createRoom = async (userId: number, settings: RoomSettings) => {
-  const { id: roomId } = await db.one<{ id: number }>(CREATE_ROOM_SQL, [
-    settings.name,
-    settings.maxPlayers,
-    userId,
-    settings.isPrivate,
-    settings.password,
-    settings.startingCards,
-    settings.drawUntilPlayable,
-    settings.stacking,
-  ]);
+  console.log("Creating room with settings:", { userId, settings });
+  
+  try {
+    const { id: roomId } = await db.one<{ id: number }>(CREATE_ROOM_SQL, [
+      settings.name,
+      settings.maxPlayers,
+      userId,
+      settings.isPrivate,
+      settings.password,
+      settings.startingCards,
+      settings.drawUntilPlayable,
+      settings.stacking,
+    ]);
 
-  await db.none(
-    "INSERT INTO room_users (room_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
-    [roomId, userId]
-  );
-  return roomId;
+    console.log("Room created with ID:", roomId);
+
+    await db.none(
+      "INSERT INTO room_users (room_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+      [roomId, userId]
+    );
+
+    console.log("User added to room:", { roomId, userId });
+    return roomId;
+  } catch (error) {
+    console.error("Error in createRoom:", error);
+    throw error;
+  }
 };
 
 const joinRoom = async (roomId: number, userId: number) => {
-  // 首先检查用户是否已经在某个房间中
-  const existingRoom = await db.oneOrNone(
+  console.log(`Attempting to join room ${roomId} for user ${userId}`);
+  
+  // First check if user is already in the target room
+  const existingRoomMembership = await db.oneOrNone(
     `
-    SELECT r.*, ru.user_id, 
+    SELECT r.*, 
            (SELECT COUNT(*) FROM room_users WHERE room_id = r.id) as current_players
     FROM rooms r
     JOIN room_users ru ON r.id = ru.room_id
-    WHERE ru.user_id = $1
+    WHERE ru.user_id = $1 AND r.id = $2
     `,
-    [userId]
+    [userId, roomId]
   );
 
-  // 如果用户已经在房间中，返回该房间信息
-  if (existingRoom) {
+  console.log('Existing room membership:', existingRoomMembership);
+
+  // If user is already in the target room, return that room info
+  if (existingRoomMembership) {
     return {
       alreadyInRoom: true,
-      roomId: existingRoom.id,
-      roomInfo: existingRoom,
+      roomId: existingRoomMembership.id,
+      roomInfo: existingRoomMembership,
     };
   }
 
-  // 如果用户不在任何房间，检查目标房间是否可以加入
+  // Check if user is in any other room and leave it
+  const otherRooms = await db.manyOrNone(
+    `SELECT room_id FROM room_users WHERE user_id = $1`,
+    [userId]
+  );
+
+  if (otherRooms.length > 0) {
+    // Delete all room memberships for this user
+    await db.none("DELETE FROM room_users WHERE user_id = $1", [userId]);
+    
+    // Update current_players count for all rooms this user was in
+    await db.none(
+      `UPDATE rooms 
+       SET current_players = current_players - 1 
+       WHERE id = ANY($1)`,
+      [otherRooms.map(r => r.room_id)]
+    );
+  }
+
+  // Check if target room exists and can be joined
   const targetRoom = await db.oneOrNone(
     `
     SELECT r.*,
@@ -95,30 +129,49 @@ const joinRoom = async (roomId: number, userId: number) => {
     [roomId]
   );
 
-  // 检查房间是否存在
+  console.log('Target room:', targetRoom);
+
+  // Check if room exists
   if (!targetRoom) {
     throw new Error("Room does not exist");
   }
 
-  // 检查房间是否已满
+  // Check if room is full
   if (targetRoom.current_players >= targetRoom.max_players) {
     throw new Error("Room is full");
   }
 
-  // 加入房间
+  // Join the room
+  console.log(`Joining room ${roomId}`);
   await db.none("INSERT INTO room_users (room_id, user_id) VALUES ($1, $2)", [
     roomId,
     userId,
   ]);
 
-  // 返回更新后的房间信息
+  // Update room's current_players count
+  await db.none(
+    "UPDATE rooms SET current_players = current_players + 1 WHERE id = $1",
+    [roomId]
+  );
+
+  // Get updated room info
+  const updatedRoom = await db.one(
+    `
+    SELECT r.*,
+           (SELECT COUNT(*) FROM room_users WHERE room_id = r.id) as current_players
+    FROM rooms r
+    WHERE r.id = $1
+    `,
+    [roomId]
+  );
+
+  console.log('Updated room:', updatedRoom);
+
+  // Return updated room info
   return {
     alreadyInRoom: false,
     roomId: roomId,
-    roomInfo: {
-      ...targetRoom,
-      current_players: targetRoom.current_players + 1,
-    },
+    roomInfo: updatedRoom,
   };
 };
 

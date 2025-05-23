@@ -102,28 +102,58 @@ document.addEventListener("DOMContentLoaded", () => {
     },
 
     leaveRoom: async () => {
-      const confirmMsg = userInfo.isOwner
-        ? "You are the room owner. Leaving will delete the room and remove all players. Are you sure?"
-        : "Are you sure you want to leave the room?";
-
-      if (confirm(confirmMsg)) {
-        socket.emit("leaveRoom", { roomId: userInfo.roomId });
-        console.log("Leaving room");
-        try {
-          const endpoint = userInfo.isOwner
-            ? `/rooms/${userInfo.roomId}/delete`
-            : `/rooms/${userInfo.roomId}/leave`;
-          const res = await fetch(endpoint, { method: "POST" });
-
-          if (res.ok) {
-            window.location.href = "/lobby";
-          } else {
-            alert("Failed to leave room.");
-          }
-        } catch (error) {
-          console.error("Error leaving room:", error);
-          alert("Failed to leave room.");
+      try {
+        // Confirm before leaving
+        const confirmMessage = userInfo.isOwner 
+          ? "Are you sure you want to leave? This will delete the room and remove all players."
+          : "Are you sure you want to leave the room?";
+        
+        if (!confirm(confirmMessage)) {
+          return;
         }
+
+        // First make the HTTP request to leave the room
+        const response = await fetch(`/rooms/${userInfo.roomId}/leave`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: 'same-origin'
+        });
+
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.message || "Failed to leave the room");
+        }
+
+        // If we get here, the room was successfully left
+        if (data.roomDeleted) {
+          // Room was deleted by owner
+          console.log("Room deleted by owner");
+          // Emit socket event before disconnecting
+          socket.emit("leaveRoom", { roomId: userInfo.roomId });
+          // Disconnect socket
+          socket.disconnect();
+          // Show success message
+          alert("Room deleted successfully");
+          // Redirect to lobby
+          window.location.replace("/lobby");
+        } else {
+          // Regular user left
+          console.log("User left room");
+          // Emit socket event before disconnecting
+          socket.emit("leaveRoom", { roomId: userInfo.roomId });
+          // Disconnect socket
+          socket.disconnect();
+          // Show success message
+          alert("Successfully left the room");
+          // Redirect to lobby
+          window.location.replace("/lobby");
+        }
+      } catch (error) {
+        console.error("Error leaving room:", error);
+        alert(error.message || "Failed to leave the room. Please try again.");
       }
     },
 
@@ -201,22 +231,28 @@ document.addEventListener("DOMContentLoaded", () => {
     chatUI.addChatMessage(message, message.userId === userInfo.userId);
   });
 
-  socket.on("roomMembersUpdate", ({ members, roomOwner }) => {
+  socket.on("roomMembersUpdate", ({ members, roomOwner, currentPlayers }) => {
     roomManager.updatePlayerList(members, roomOwner);
+    if (currentPlayers !== undefined) {
+      elements.currentPlayers.textContent = currentPlayers;
+    }
   });
 
   socket.on("playerJoined", ({ username }) => {
     chatUI.addSystemMessage(`${username} has joined the room`);
   });
 
-  socket.on("playerLeft", ({ username }) => {
+  socket.on("playerLeft", ({ username, remainingPlayers }) => {
     chatUI.addSystemMessage(`${username} has left the room`);
+    if (remainingPlayers !== undefined) {
+      elements.currentPlayers.textContent = remainingPlayers;
+    }
   });
 
   socket.on("roomClosed", () => {
     chatUI.addSystemMessage("The room has been closed by the owner.");
     alert("This room has been closed.");
-    window.location.href = "/lobby";
+    window.location.replace("/lobby");
   });
 
   socket.on("playerReadyUpdate", ({ userId, ready }) => {

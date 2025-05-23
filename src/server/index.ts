@@ -19,15 +19,56 @@ const app = express();
 const server = createServer(app);
 const io = setupSocket(server);
 
+// Add CSP headers first
+app.use((req, res, next) => {
+  res.setHeader(
+    "Content-Security-Policy",
+    "default-src 'self' http://localhost:35729; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' http://localhost:35729 https://localhost:35729; " +
+    "style-src 'self' 'unsafe-inline'; " +
+    "img-src 'self' data: http://localhost:3000; " +
+    "connect-src 'self' ws://localhost:35729 wss://localhost:35729; " +
+    "font-src 'self'; " +
+    "frame-src 'self'; " +
+    "worker-src 'self' blob:;"
+  );
+  next();
+});
+
+// Add CORS headers for development
 if (process.env.NODE_ENV !== "production") {
-  const reloadServer = livereload.createServer();
-  reloadServer.watch(path.join(process.cwd(), "public", "js"));
+  app.use((req, res, next) => {
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    next();
+  });
+}
+
+if (process.env.NODE_ENV !== "production") {
+  const reloadServer = livereload.createServer({
+    port: 35729,
+    exts: ['js', 'css', 'ejs'],
+    applyCSSLive: true,
+    applyImgLive: true,
+    exclusions: [/node_modules/],
+    debug: true
+  });
+  
+  reloadServer.watch([
+    path.join(process.cwd(), "public"),
+    path.join(process.cwd(), "src", "server", "views")
+  ]);
+  
   reloadServer.server.once("connection", () => {
     setTimeout(() => {
       reloadServer.refresh("/");
     }, 100);
   });
-  app.use(connectLivereload());
+  
+  app.use(connectLivereload({
+    port: 35729
+  }));
 }
 
 setupSessions(app);

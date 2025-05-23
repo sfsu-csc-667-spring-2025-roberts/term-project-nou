@@ -32,8 +32,16 @@ WHERE r.id = $1 AND r.created_by = $2
 RETURNING id`;
 
 export const ADD_PLAYER = `
-INSERT INTO room_users (room_id, user_id) 
-VALUES ($1, $2)`;
+WITH added_player AS (
+  INSERT INTO room_users (room_id, user_id) 
+  VALUES ($1, $2)
+  RETURNING *
+)
+UPDATE rooms
+SET current_players = current_players + 1
+WHERE id = $1
+RETURNING *;
+`;
 
 export const GET_PLAYERS_SQL = `
 SELECT u.id, u.username, u.email, gu.room_id AS room_user_id
@@ -43,9 +51,45 @@ WHERE gu.room_id = $(roomId)
 `;
 
 export const LEAVE_ROOM_SQL = `
-DELETE FROM room_users
-WHERE room_id = $(roomId) AND user_id = $(userId)
-RETURNING *;
+WITH user_info AS (
+  SELECT r.created_by, r.id, r.current_players
+  FROM rooms r
+  WHERE r.id = $(roomId)
+),
+deleted_membership AS (
+  DELETE FROM room_users
+  WHERE room_id = $(roomId) AND user_id = $(userId)
+  RETURNING *
+),
+room_deletion AS (
+  DELETE FROM rooms
+  WHERE id = $(roomId) 
+  AND EXISTS (
+    SELECT 1 FROM user_info 
+    WHERE created_by = $(userId)
+  )
+  RETURNING *
+),
+updated_room AS (
+  UPDATE rooms
+  SET current_players = current_players - 1
+  WHERE id = $(roomId)
+  AND EXISTS (SELECT 1 FROM deleted_membership)
+  AND NOT EXISTS (SELECT 1 FROM room_deletion)
+  RETURNING id, current_players
+)
+SELECT 
+  CASE 
+    WHEN EXISTS (SELECT 1 FROM room_deletion) THEN 
+      json_build_object('deleted', true)
+    WHEN EXISTS (SELECT 1 FROM deleted_membership) THEN 
+      json_build_object(
+        'deleted', false,
+        'id', (SELECT id FROM updated_room),
+        'current_players', (SELECT current_players FROM updated_room)
+      )
+    ELSE NULL
+  END as result;
 `;
 
 export const DELETE_ROOM_SQL = `
@@ -136,7 +180,8 @@ export const GET_ROOM_OWNER_SQL = `
 SELECT u.id, u.username
 FROM rooms r
 JOIN users u ON r.created_by = u.id
-WHERE r.id = $1;
+WHERE r.id = $1
+LIMIT 1;
 `;
 
 export const GET_ROOM_MAX_PLAYERS_SQL = `
